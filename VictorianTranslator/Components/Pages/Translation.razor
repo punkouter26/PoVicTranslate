@@ -1,0 +1,122 @@
+@page "/"
+@namespace VictorianTranslator.Components.Pages
+@using VictorianTranslator.Services
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Forms
+@inject ITranslationService TranslationService
+@inject ITextToSpeechService TextToSpeechService
+@rendermode InteractiveServer
+
+<PageTitle>Victorian Translator</PageTitle>
+
+<div class="container mt-4">
+    <h1>Victorian English Translator</h1>
+    
+    <div class="mb-3">
+        <label for="inputText" class="form-label">Enter your modern text:</label>
+        <textarea @bind="InputText" 
+                  class="form-control" 
+                  id="inputText" 
+                  rows="3"
+                  placeholder="Enter text to translate to Victorian English..."
+                  disabled="@IsTranslating"></textarea>
+    </div>
+    
+    <button class="btn btn-primary mb-3" @onclick="TranslateTextAsync" disabled="@IsTranslating">
+        @if (IsTranslating)
+        {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span class="ms-2">Translating...</span>
+        }
+        else
+        {
+            <span>Translate to Victorian English</span>
+        }
+    </button>
+
+    @if (!string.IsNullOrEmpty(TranslatedText))
+    {
+        <div class="mb-3">
+            <label class="form-label">Victorian Translation:</label>
+            <div class="p-3 bg-light border rounded">
+                @TranslatedText
+            </div>
+            <button class="btn btn-secondary mt-2" @onclick="SpeakTextAsync" disabled="@IsSpeaking">
+                @if (IsSpeaking)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span class="ms-2">Reading...</span>
+                }
+                else
+                {
+                    <span>Read Aloud with British Accent</span>
+                }
+            </button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @ErrorMessage
+        </div>
+    }
+</div>
+
+@code {
+    private string InputText { get; set; } = string.Empty;
+    private string TranslatedText { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool IsTranslating { get; set; }
+    private bool IsSpeaking { get; set; }
+
+    private async Task TranslateTextAsync()
+    {
+        try
+        {
+            ErrorMessage = string.Empty;
+            if (string.IsNullOrWhiteSpace(InputText))
+            {
+                ErrorMessage = "Please enter some text to translate.";
+                return;
+            }
+
+            IsTranslating = true;
+            TranslatedText = await TranslationService.TranslateToVictorianEnglishAsync(InputText);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Translation error: {ex.Message}";
+            TranslatedText = string.Empty;
+        }
+        finally
+        {
+            IsTranslating = false;
+        }
+    }
+
+    private async Task SpeakTextAsync()
+    {
+        try
+        {
+            ErrorMessage = string.Empty;
+            if (string.IsNullOrWhiteSpace(TranslatedText))
+            {
+                ErrorMessage = "No translated text to read.";
+                return;
+            }
+
+            IsSpeaking = true;
+            await TextToSpeechService.SpeakTextAsync(TranslatedText);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Text-to-speech error: {ex.Message}";
+        }
+        finally
+        {
+            IsSpeaking = false;
+        }
+    }
+}
