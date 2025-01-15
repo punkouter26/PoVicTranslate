@@ -1,12 +1,14 @@
 name: Build and deploy .NET Core application to Web App PoVicTranslate
+
 on:
   push:
     branches:
-    - master
+      - master
+  workflow_dispatch:
+
 env:
   AZURE_WEBAPP_NAME: PoVicTranslate
-  AZURE_WEBAPP_PACKAGE_PATH: VictorianTranslator\published
-  CONFIGURATION: Release
+  AZURE_WEBAPP_PACKAGE_PATH: published
   DOTNET_CORE_VERSION: 9.0.x
   WORKING_DIRECTORY: VictorianTranslator
 
@@ -16,18 +18,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup .NET
+    - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    
+
+    - name: Restore
+      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
+      
     - name: Build
-      run: |
-        dotnet restore "${{ env.WORKING_DIRECTORY }}"
-        dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
-        dotnet publish "${{ env.WORKING_DIRECTORY }}" -c Release -o ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration Release --no-restore
+      
+    - name: Publish
+      run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration Release --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
     
-    - name: Deploy to Azure Web App
+    - name: Deploy to Azure WebApp
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
