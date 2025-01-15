@@ -17,6 +17,7 @@ builder.Services.Configure<ApiSettings>(
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ITextToSpeechService, TextToSpeechService>();
+builder.Services.AddScoped<ILyricsService, LyricsService>();
 
 // Add CORS policy for development
 if (builder.Environment.IsDevelopment())
