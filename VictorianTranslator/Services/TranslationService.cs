@@ -1,77 +1,105 @@
-using System.Text;
-using System.Text.Json;
+using Azure;
+using Azure.AI.OpenAI;
 using VictorianTranslator.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging; // Added for logging
 
 namespace VictorianTranslator.Services;
 
 public class TranslationService : ITranslationService
 {
-    private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
-    private const string GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    private readonly OpenAIClient _openAIClient;
+    private readonly string _deploymentName;
+    private readonly ILogger<TranslationService> _logger; // Added logger
 
-    public TranslationService(HttpClient httpClient, IOptions<ApiSettings> apiSettings)
+    public TranslationService(IOptions<ApiSettings> apiSettings, ILogger<TranslationService> logger)
     {
-        _httpClient = httpClient;
-        _apiKey = apiSettings.Value.GeminiApiKey;
+        _logger = logger; // Assign logger
+        var settings = apiSettings.Value;
+
+        if (string.IsNullOrWhiteSpace(settings.AzureOpenAIApiKey) || 
+            string.IsNullOrWhiteSpace(settings.AzureOpenAIEndpoint) || 
+            string.IsNullOrWhiteSpace(settings.AzureOpenAIDeploymentName))
+        {
+            _logger.LogError("Azure OpenAI settings (ApiKey, Endpoint, DeploymentName) are not configured properly in appsettings.json.");
+            throw new InvalidOperationException("Azure OpenAI settings are not configured.");
+        }
+        
+        _deploymentName = settings.AzureOpenAIDeploymentName;
+        
+        try
+        {
+            // Using API Key authentication
+            _openAIClient = new OpenAIClient(new Uri(settings.AzureOpenAIEndpoint), new AzureKeyCredential(settings.AzureOpenAIApiKey));
+            _logger.LogInformation("OpenAIClient initialized successfully with endpoint {Endpoint}", settings.AzureOpenAIEndpoint);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize OpenAIClient with endpoint {Endpoint}", settings.AzureOpenAIEndpoint);
+            throw; // Re-throw the exception after logging
+        }
     }
 
     public async Task<string> TranslateToVictorianEnglishAsync(string modernText)
     {
-        var prompt = @$"
-            Please translate the following modern English text into Victorian-era English, 
-            maintaining proper Victorian mannerisms, formality, and eloquence. 
-            
-            Rules for translation:
-            1. Use formal and elaborate language
-            2. Include Victorian-era expressions and phrases
-            3. Maintain proper etiquette in speech
-            4. Use more sophisticated vocabulary
-            5. Add appropriate honorifics where applicable
+        _logger.LogInformation("Starting translation for text: '{ModernText}'", modernText);
 
-            Text to translate: '{modernText}'
+        // System prompt defining the role and task for the AI model
+        var systemPrompt = @"You are a highly skilled translator specializing in converting modern English into authentic Victorian-era English. 
+Your task is to translate the user's text while adhering strictly to the following rules:
+1. Use formal, elaborate, and sophisticated language characteristic of the Victorian era.
+2. Incorporate common Victorian expressions, idioms, and turns of phrase naturally.
+3. Maintain a tone of utmost propriety, politeness, and decorum.
+4. Employ a richer and more varied vocabulary than modern English.
+5. Use appropriate honorifics (e.g., 'Sir', 'Madam', 'Miss') if the context suggests addressing someone, though often the input text won't provide this context.
+6. Structure sentences in a more complex manner typical of the period.
+7. Avoid modern slang, contractions (use 'do not' instead of 'don't'), and overly casual phrasing.
+8. Respond ONLY with the translated Victorian English text. Do not include any preamble, explanation, apologies, or conversational filler. For example, do not say 'Here is the translation:' or 'I trust this meets your requirements.'";
 
-            Provide only the translated text without any explanations or additional context.";
+        // User prompt containing the text to be translated
+        var userPrompt = $"Pray, render the following modern text into the Queen's English of the Victorian age: '{modernText}'";
 
-        var requestBody = new
+        var chatCompletionsOptions = new ChatCompletionsOptions()
         {
-            contents = new[]
+            DeploymentName = _deploymentName, // Use the deployment name from configuration
+            Messages =
             {
-                new
-                {
-                    parts = new[]
-                    {
-                        new { text = prompt }
-                    }
-                }
-            }
+                new ChatRequestSystemMessage(systemPrompt),
+                new ChatRequestUserMessage(userPrompt),
+            },
+            Temperature = 0.7f, // Adjust creativity/determinism
+            MaxTokens = 800,    // Adjust based on expected output length
+            NucleusSamplingFactor = 0.95f,
+            FrequencyPenalty = 0,
+            PresencePenalty = 0,
         };
 
-        var requestJson = JsonSerializer.Serialize(requestBody);
-        var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync(
-            $"{GEMINI_API_URL}?key={_apiKey}",
-            requestContent);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            throw new Exception($"Translation API error: {errorContent}");
+            _logger.LogInformation("Sending request to Azure OpenAI deployment '{DeploymentName}'", _deploymentName);
+            Response<ChatCompletions> response = await _openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
+            
+            if (response == null || response.Value == null || !response.Value.Choices.Any())
+            {
+                 _logger.LogWarning("Received null or empty response from Azure OpenAI.");
+                 return "Regrettably, the translation could not be procured at this time.";
+            }
+
+            ChatResponseMessage responseMessage = response.Value.Choices[0].Message;
+            _logger.LogInformation("Successfully received translation from Azure OpenAI.");
+            return responseMessage.Content ?? "The translation yielded naught but silence.";
+
         }
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(responseContent);
-
-        // Navigate through the response JSON to get the generated text
-        var text = doc.RootElement
-            .GetProperty("candidates")[0]
-            .GetProperty("content")
-            .GetProperty("parts")[0]
-            .GetProperty("text")
-            .GetString();
-
-        return text ?? "Translation failed to generate text.";
+        catch (RequestFailedException ex)
+        {
+            _logger.LogError(ex, "Azure OpenAI API request failed. Status: {Status}, ErrorCode: {ErrorCode}, Message: {Message}", ex.Status, ex.ErrorCode, ex.Message);
+            // Consider providing a more user-friendly error or details based on ex.Status / ex.ErrorCode
+            throw new Exception($"Translation API error: Failed to communicate with Azure OpenAI. Status: {ex.Status}. Please check logs for details.", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An unexpected error occurred during translation.");
+            throw new Exception("An unexpected error occurred during the translation process.", ex);
+        }
     }
 }

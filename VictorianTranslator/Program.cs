@@ -13,11 +13,12 @@ builder.Services.AddRazorComponents()
 builder.Services.Configure<ApiSettings>(
     builder.Configuration.GetSection("ApiSettings"));
 
-// Register HttpClient and Services
-builder.Services.AddHttpClient();
+// Register Services (HttpClient removed as it's no longer directly needed by registered services)
+// Note: If any other service added later needs HttpClientFactory, re-add builder.Services.AddHttpClient();
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ITextToSpeechService, TextToSpeechService>();
 builder.Services.AddScoped<ILyricsService, LyricsService>();
+builder.Services.AddScoped<IDiagnosticService, DiagnosticService>(); // Register the diagnostic service
 
 // Add CORS policy for development
 if (builder.Environment.IsDevelopment())
@@ -48,6 +49,3 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
-
-
-

@@ -1,0 +1,177 @@
+@page "/"
+@page "/diagnostics"
+@using VictorianTranslator.Services
+@using VictorianTranslator.Models
+@inject IDiagnosticService DiagnosticService
+@inject NavigationManager NavigationManager
+@inject ILogger<DiagnosticsPage> Logger
+
+<PageTitle>System Diagnostics</PageTitle>
+
+<div class="diagnostics-page-container">
+    <div class="diagnostics-page-content">
+        <h4><i class="fas fa-stethoscope"></i> System Diagnostics</h4>
+        <hr />
+
+        @if (_isLoading)
+        {
+            <div class="text-center">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">Running checks...</span>
+                </div>
+                <p class="mt-2">Running diagnostic checks...</p>
+            </div>
+        }
+        else if (_results.Any())
+        {
+            <table class="table table-sm table-dark table-striped">
+                <thead>
+                    <tr>
+                        <th>Check</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var result in _results)
+                    {
+                        <tr>
+                            <td>@result.CheckName</td>
+                            <td>
+                                @if (result.Success)
+                                {
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> Success</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger"><i class="fas fa-times-circle"></i> Failed</span>
+                                }
+                            </td>
+                            <td class="details-column">@result.Message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            
+            @* Button to proceed to the main app *@
+            <div class="text-center mt-4">
+                 <button class="btn btn-lg urban-btn" @onclick="ProceedToApp">
+                     Proceed to Translator <i class="fas fa-arrow-circle-right"></i>
+                 </button>
+            </div>
+        }
+        else
+        {
+             <p class="text-warning">No diagnostic results available.</p>
+             @* Optionally add a retry or proceed button here too *@
+             <div class="text-center mt-4">
+                 <button class="btn btn-lg urban-btn" @onclick="ProceedToApp">
+                     Proceed Anyway <i class="fas fa-arrow-circle-right"></i>
+                 </button>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    /* Style the container for the page */
+    .diagnostics-page-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh; /* Adjust as needed */
+        padding: 2rem;
+         background-color: #121212; /* Match body background */
+    }
+
+    .diagnostics-page-content {
+        background-color: #2d2d2d; /* Dark background */
+        color: #fff; /* Light text */
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        width: 100%; /* Take available width */
+        max-width: 700px; /* Increase max width for page */
+        border: 1px solid #ffd700; /* Gold border */
+    }
+
+    .diagnostics-page-content h4 {
+         color: #ffd700; /* Gold title */
+         font-family: 'Permanent Marker', cursive; /* Match theme */
+         text-align: center;
+         margin-bottom: 1.5rem;
+    }
+
+     .diagnostics-page-content hr {
+         border-color: rgba(255, 215, 0, 0.3); /* Lighter gold */
+     }
+
+    .details-column {
+        max-width: 350px; /* Adjust width */
+        word-wrap: break-word;
+        font-size: 0.9em;
+    }
+
+    .table-dark {
+        --bs-table-bg: #343a40;
+        --bs-table-striped-bg: #3f464d;
+        --bs-table-color: #fff;
+        border-color: #495057;
+    }
+
+    /* Reuse button style from Translation page if defined globally, otherwise define here */
+    .urban-btn {
+        background: linear-gradient(45deg, #ffd700, #ff8c00);
+        border: none;
+        color: #000;
+        font-weight: bold;
+        padding: 10px 25px;
+        border-radius: 25px;
+        text-transform: uppercase;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .urban-btn:hover:not(:disabled) {
+        transform: scale(1.05);
+        background: linear-gradient(45deg, #ff8c00, #ffd700);
+    }
+</style>
+
+@code {
+    private bool _isLoading = true;
+    private List<DiagnosticResult> _results = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("DiagnosticsPage initializing, running checks...");
+        try
+        {
+            _results = await DiagnosticService.RunChecksAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error running diagnostic checks.");
+            _results.Add(new DiagnosticResult
+            {
+                CheckName = "Diagnostic Service Execution",
+                Success = false,
+                Message = $"Failed to run diagnostics: {ex.Message}",
+                Error = ex
+            });
+        }
+        finally
+        {
+            _isLoading = false;
+            Logger.LogInformation("Diagnostic checks finished.");
+            // No timer needed, UI updates automatically
+        }
+    }
+
+    private void ProceedToApp()
+    {
+        Logger.LogInformation("Proceeding to translator page.");
+        NavigationManager.NavigateTo("/translate"); // Navigate to the main translator page
+    }
+}
