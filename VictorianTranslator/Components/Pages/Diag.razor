@@ -1,10 +1,9 @@
-@page "/"
-@page "/diagnostics"
+@page "/diag"
 @using VictorianTranslator.Services
 @using VictorianTranslator.Models
 @inject IDiagnosticService DiagnosticService
 @inject NavigationManager NavigationManager
-@inject ILogger<DiagnosticsPage> Logger
+@inject ILogger<Diag> Logger
 
 <PageTitle>System Diagnostics</PageTitle>
 
@@ -52,23 +51,10 @@
                     }
                 </tbody>
             </table>
-            
-            @* Button to proceed to the main app *@
-            <div class="text-center mt-4">
-                 <button class="btn btn-lg urban-btn" @onclick="ProceedToApp">
-                     Proceed to Translator <i class="fas fa-arrow-circle-right"></i>
-                 </button>
-            </div>
         }
         else
         {
              <p class="text-warning">No diagnostic results available.</p>
-             @* Optionally add a retry or proceed button here too *@
-             <div class="text-center mt-4">
-                 <button class="btn btn-lg urban-btn" @onclick="ProceedToApp">
-                     Proceed Anyway <i class="fas fa-arrow-circle-right"></i>
-                 </button>
-            </div>
         }
     </div>
 </div>
@@ -118,25 +104,6 @@
         --bs-table-color: #fff;
         border-color: #495057;
     }
-
-    /* Reuse button style from Translation page if defined globally, otherwise define here */
-    .urban-btn {
-        background: linear-gradient(45deg, #ffd700, #ff8c00);
-        border: none;
-        color: #000;
-        font-weight: bold;
-        padding: 10px 25px;
-        border-radius: 25px;
-        text-transform: uppercase;
-        transition: all 0.2s;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .urban-btn:hover:not(:disabled) {
-        transform: scale(1.05);
-        background: linear-gradient(45deg, #ff8c00, #ffd700);
-    }
 </style>
 
 @code {
@@ -145,7 +112,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Logger.LogInformation("DiagnosticsPage initializing, running checks...");
+        Logger.LogInformation("Diag page initializing, running checks...");
         try
         {
             _results = await DiagnosticService.RunChecksAsync();
@@ -165,13 +132,8 @@
         {
             _isLoading = false;
             Logger.LogInformation("Diagnostic checks finished.");
-            // No timer needed, UI updates automatically
         }
     }
 
-    private void ProceedToApp()
-    {
-        Logger.LogInformation("Proceeding to translator page.");
-        NavigationManager.NavigateTo("/translate"); // Navigate to the main translator page
-    }
+    // Removed ProceedToApp method as this page is now manually accessed
 }
