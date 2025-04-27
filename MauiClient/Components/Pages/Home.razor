@@ -1,0 +1,67 @@
+﻿@page "/"
+@inject MauiClient.Services.TranslationApiService TranslationApiService
+<PageTitle>PoVicTranslate</PageTitle>
+
+<h1>PoVicTranslate</h1>
+
+<div class="translation-container">
+    <label for="inputText">Enter modern English or rap lyrics:</label>
+    <textarea id="inputText" @bind="InputText" rows="5" class="form-control" placeholder="Type your text here..." disabled="@IsTranslating" aria-label="Input text to translate"></textarea>
+    <button class="btn btn-primary mt-2" @onclick="TranslateAsync" disabled="@IsTranslating || string.IsNullOrWhiteSpace(InputText)" aria-label="Translate to Victorian English">
+        @if (IsTranslating)
+        {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span class="ms-2">Translating...</span>
+        }
+        else
+        {
+            <span>Translate to Victorian English</span>
+        }
+    </button>
+
+    @if (!string.IsNullOrEmpty(TranslatedText))
+    {
+        <div class="alert alert-success mt-3" role="status">
+            <strong>Victorian Translation:</strong>
+            <div class="mt-2">@TranslatedText</div>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger mt-3" role="alert">
+            <strong>Error:</strong> @ErrorMessage
+        </div>
+    }
+</div>
+
+@code {
+    private string InputText { get; set; } = string.Empty;
+    private string TranslatedText { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool IsTranslating { get; set; }
+
+    // Handles translation requests
+    private async Task TranslateAsync()
+    {
+        ErrorMessage = string.Empty;
+        TranslatedText = string.Empty;
+        if (string.IsNullOrWhiteSpace(InputText))
+        {
+            ErrorMessage = "Please enter some text to translate.";
+            return;
+        }
+        try
+        {
+            IsTranslating = true;
+            TranslatedText = await TranslationApiService.TranslateToVictorianEnglishAsync(InputText);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Translation failed: {ex.Message}";
+        }
+        finally
+        {
+            IsTranslating = false;
+        }
+    }
+}

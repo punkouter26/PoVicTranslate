@@ -59,3 +59,15 @@ packages/
 *.cache
 *.bak
 Thumbs.db
+
+# MAUI
+MauiClient/bin/
+MauiClient/obj/
+MauiClient/Platforms/Android/obj/
+MauiClient/Platforms/Android/bin/
+MauiClient/Platforms/iOS/obj/
+MauiClient/Platforms/iOS/bin/
+MauiClient/Platforms/MacCatalyst/obj/
+MauiClient/Platforms/MacCatalyst/bin/
+MauiClient/Platforms/Windows/obj/
+MauiClient/Platforms/Windows/bin/
