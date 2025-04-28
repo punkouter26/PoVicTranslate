@@ -12,8 +12,8 @@ public class TextToSpeechService : ITextToSpeechService
     private readonly SpeechConfig _speechConfig;
     private readonly ILogger<TextToSpeechService> _logger;
     private readonly IJSRuntime _jsRuntime; // Added back
-    // Define a suitable default Victorian-esque voice (adjust if needed)
-    private const string DefaultVictorianVoice = "en-US-AriaNeural"; // Example, choose appropriate
+    // Define a suitable default Victorian-esque British voice
+    private const string DefaultVictorianVoice = "en-GB-RyanNeural"; // British male voice that fits Victorian era
 
     public TextToSpeechService(IOptions<ApiSettings> apiSettings, ILogger<TextToSpeechService> logger, IJSRuntime jsRuntime) // Added IJSRuntime
     {
