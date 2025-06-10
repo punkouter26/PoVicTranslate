@@ -1,5 +1,6 @@
 using VictorianTranslator.Configuration;
 using VictorianTranslator.Services;
+using VictorianTranslator.Server.Services; // Added for ISpeechService and SpeechService
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +39,7 @@ builder.Services.Configure<ApiSettings>(
 // Register Services
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ILyricsService, LyricsService>();
+builder.Services.AddScoped<VictorianTranslator.Server.Services.ISpeechService, VictorianTranslator.Server.Services.SpeechService>();
 
 // Add CORS policy
 builder.Services.AddCors(options =>

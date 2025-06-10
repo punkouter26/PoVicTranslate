@@ -14,7 +14,7 @@ namespace VictorianTranslator.Client.Services
             _httpClient = httpClient;
         }
 
-        public async Task<string> TranslateText(string text)
+        public async Task<string?> TranslateText(string text)
         {
             var request = new TranslationRequest { Text = text };
             var response = await _httpClient.PostAsJsonAsync("Translation/translate", request);

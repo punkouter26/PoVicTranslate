@@ -14,7 +14,7 @@ namespace VictorianTranslator.Services
 
         public LyricsService(IWebHostEnvironment webHostEnvironment)
         {
-            _lyricsDirectory = Path.Combine(webHostEnvironment.WebRootPath, "scrapes");
+            _lyricsDirectory = Path.Combine(webHostEnvironment.ContentRootPath, "..", "scrapes");
             
             // Create directory if it doesn't exist
             if (!Directory.Exists(_lyricsDirectory))
@@ -56,4 +56,4 @@ namespace VictorianTranslator.Services
             return string.Join(" ", words.Take(MaxWords)) + "...";
         }
     }
-} 
+}

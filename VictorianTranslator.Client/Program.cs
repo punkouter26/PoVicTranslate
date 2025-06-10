@@ -13,5 +13,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<ClientTranslationService>();
 builder.Services.AddScoped<ClientLyricsService>();
+builder.Services.AddScoped<ClientSpeechService>();
 
 await builder.Build().RunAsync();

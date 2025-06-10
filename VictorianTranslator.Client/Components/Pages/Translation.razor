@@ -8,6 +8,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject ClientTranslationService ClientTranslationService
 @inject ClientLyricsService ClientLyricsService
+@inject ClientSpeechService ClientSpeechService
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveWebAssembly
 
@@ -421,8 +422,8 @@
             }
 
             IsSpeaking = true;
-            // This will need to call a server API for text-to-speech
-            // For now, it does nothing.
+            byte[] audioBytes = await ClientSpeechService.SynthesizeSpeechAsync(TranslatedText);
+            await JSRuntime.InvokeVoidAsync("playAudio", audioBytes);
         }
         catch (Exception)
         {

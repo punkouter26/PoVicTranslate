@@ -72,13 +72,37 @@
     }
 </style>
 
-@code {
-    private List<string> _messages = new(); // Use simple messages for now
+@inject HttpClient Http
+@inject IConfiguration Configuration
 
-    protected override void OnInitialized()
+@code {
+    private List<string> _messages = new();
+    private string _apiBaseUrl = string.Empty;
+    private bool _apiConnectionStatus;
+
+    protected override async Task OnInitializedAsync()
     {
         Logger.LogInformation("Diag page initialized.");
-        _messages.Add("Diagnostic functionality is currently disabled in the client-side application.");
-        _messages.Add("Please check the server's logs for detailed diagnostics.");
+
+        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "ApiBaseUrl not found in configuration.";
+        _messages.Add($"API Base URL: {_apiBaseUrl}");
+
+        await CheckApiConnection();
+    }
+
+    private async Task CheckApiConnection()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"{_apiBaseUrl}/Lyrics/available");
+            _apiConnectionStatus = response.IsSuccessStatusCode;
+            _messages.Add($"API Connection Status ({_apiBaseUrl}/Lyrics/available): {_apiConnectionStatus}");
+        }
+        catch (Exception ex)
+        {
+            _apiConnectionStatus = false;
+            _messages.Add($"API Connection Error: {ex.Message}");
+            Logger.LogError(ex, "Error checking API connection.");
+        }
     }
 }

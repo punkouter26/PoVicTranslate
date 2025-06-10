@@ -27,6 +27,17 @@
         <span class="dismiss">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        window.playAudio = (audioBytes) => {
+            const blob = new Blob([new Uint8Array(audioBytes)], { type: 'audio/mpeg' });
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.play();
+            audio.onended = () => {
+                URL.revokeObjectURL(url);
+            };
+        };
+    </script>
 </body>
 
 </html>
