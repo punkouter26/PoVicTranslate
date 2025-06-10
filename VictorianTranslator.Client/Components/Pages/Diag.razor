@@ -1,0 +1,84 @@
+@page "/diag"
+@inject NavigationManager NavigationManager
+@inject ILogger<Diag> Logger
+
+<PageTitle>System Diagnostics</PageTitle>
+
+<div class="diagnostics-page-container">
+    <div class="diagnostics-page-content">
+        <h4><i class="fas fa-stethoscope"></i> System Diagnostics</h4>
+        <hr />
+
+        @if (_messages.Any())
+        {
+            <ul class="list-group">
+                @foreach (var message in _messages)
+                {
+                    <li class="list-group-item list-group-item-dark">@message</li>
+                }
+            </ul>
+        }
+        else
+        {
+             <p class="text-warning">No diagnostic messages available.</p>
+        }
+    </div>
+</div>
+
+<style>
+    /* Style the container for the page */
+    .diagnostics-page-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh; /* Adjust as needed */
+        padding: 2rem;
+         background-color: #121212; /* Match body background */
+    }
+
+    .diagnostics-page-content {
+        background-color: #2d2d2d; /* Dark background */
+        color: #fff; /* Light text */
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        width: 100%; /* Take available width */
+        max-width: 700px; /* Increase max width for page */
+        border: 1px solid #ffd700; /* Gold border */
+    }
+
+    .diagnostics-page-content h4 {
+         color: #ffd700; /* Gold title */
+         font-family: 'Permanent Marker', cursive; /* Match theme */
+         text-align: center;
+         margin-bottom: 1.5rem;
+    }
+
+     .diagnostics-page-content hr {
+         border-color: rgba(255, 215, 0, 0.3); /* Lighter gold */
+     }
+
+    .details-column {
+        max-width: 350px; /* Adjust width */
+        word-wrap: break-word;
+        font-size: 0.9em;
+    }
+
+    .table-dark {
+        --bs-table-bg: #343a40;
+        --bs-table-striped-bg: #3f464d;
+        --bs-table-color: #fff;
+        border-color: #495057;
+    }
+</style>
+
+@code {
+    private List<string> _messages = new(); // Use simple messages for now
+
+    protected override void OnInitialized()
+    {
+        Logger.LogInformation("Diag page initialized.");
+        _messages.Add("Diagnostic functionality is currently disabled in the client-side application.");
+        _messages.Add("Please check the server's logs for detailed diagnostics.");
+    }
+}

@@ -71,3 +71,4 @@ MauiClient/Platforms/MacCatalyst/obj/
 MauiClient/Platforms/MacCatalyst/bin/
 MauiClient/Platforms/Windows/obj/
 MauiClient/Platforms/Windows/bin/
+.azure
