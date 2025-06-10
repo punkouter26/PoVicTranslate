@@ -3,43 +3,67 @@ name: Build and deploy .NET Core application to Web App PoVicTranslate
 on:
   push:
     branches:
+      - main
       - master
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: povictranslate
+  AZURE_WEBAPP_NAME: app-hq7jegbvysi26
   AZURE_WEBAPP_PACKAGE_PATH: ${{ github.workspace }}/published
   DOTNET_CORE_VERSION: 9.0.x
-  WORKING_DIRECTORY: VictorianTranslator
+  AZURE_RESOURCE_GROUP: rg-PoVicTranslate
+  SERVER_PROJECT_PATH: VictorianTranslator.Server/VictorianTranslator.Server.csproj
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+      
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
 
-    - name: Restore
-      run: dotnet restore "${{ env.WORKING_DIRECTORY }}"
+    - name: Cache .NET packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore VictorianTranslator.sln
       
-    - name: Build
-      run: dotnet build "${{ env.WORKING_DIRECTORY }}" --configuration Release --no-restore
+    - name: Build solution
+      run: dotnet build VictorianTranslator.sln --configuration Release --no-restore
       
-    - name: Publish
-      run: dotnet publish "${{ env.WORKING_DIRECTORY }}" --configuration Release --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+    - name: Publish server project
+      run: dotnet publish ${{ env.SERVER_PROJECT_PATH }} --configuration Release --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Deploy to Azure WebApp
-      uses: azure/webapps-deploy@v2
+      uses: azure/webapps-deploy@v3
       with:
-        app-name: povictranslate
-        # publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }} # No longer needed
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        resource-group-name: ${{ env.AZURE_RESOURCE_GROUP }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        slot-name: production
+        
+    - name: Verify deployment
+      run: |
+        echo "Waiting for deployment to be ready..."
+        sleep 30
+        curl -f https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/ || exit 1
+        echo "Deployment verification successful!"
