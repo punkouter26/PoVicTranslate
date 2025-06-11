@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant U as User
+    participant C as Client App
+    participant S as Server API
+    participant A as Azure OpenAI
+    U->>C: Enter Text for Translation
+    C->>S: Send Translation Request
+    S->>A: Request Translation
+    A-->>S: Return Translated Text
+    S-->>C: Send Translated Text
+    C-->>U: Display Translated Text
+    opt Speech Synthesis
+        U->>C: Request Audio
+        C->>S: Request Speech Synthesis
+        S->>A: Request Audio Generation
+        A-->>S: Return Audio Data
+        S-->>C: Send Audio Data
+        C-->>U: Play Audio
+    end

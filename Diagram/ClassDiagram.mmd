@@ -1,0 +1,22 @@
+classDiagram
+    class TranslationRequest {
+        +string InputText
+        +string TargetLanguage
+    }
+    class TranslationResponse {
+        +string TranslatedText
+        +byte[] AudioData
+    }
+    class TranslationService {
+        +TranslateAsync(request) Task~TranslationResponse~
+    }
+    class LyricsService {
+        +GetLyricsAsync() Task~string~
+    }
+    class SpeechService {
+        +SynthesizeSpeechAsync(text) Task~byte[]~
+    }
+    TranslationService --> TranslationRequest : Uses
+    TranslationService --> TranslationResponse : Returns
+    TranslationService --> AzureOpenAI : Depends on
+    SpeechService --> AzureSpeech : Depends on

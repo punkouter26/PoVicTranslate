@@ -1,115 +1,63 @@
-name: Build and deploy .NET Core application to Web App PoVicTranslate
+name: Build and Deploy VictorianTranslator
 
 on:
   push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
-
-env:
-  AZURE_WEBAPP_NAME: app-hq7jegbvysi26
-  AZURE_WEBAPP_PACKAGE_PATH: ${{ github.workspace }}/published
-  DOTNET_CORE_VERSION: 9.0.x
-  AZURE_RESOURCE_GROUP: rg-PoVicTranslate
-  SERVER_PROJECT_PATH: VictorianTranslator.Server/VictorianTranslator.Server.csproj
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      contents: read
-      id-token: write
-      
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
 
-    - name: Cache .NET packages
-      uses: actions/cache@v4
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
       with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
+        dotnet-version: '9.0.x'
 
     - name: Restore dependencies
       run: dotnet restore VictorianTranslator.sln
-      
-    - name: Build solution
-      run: dotnet build VictorianTranslator.sln --configuration Release --no-restore
-      
-    - name: Publish server project
-      run: dotnet publish ${{ env.SERVER_PROJECT_PATH }} --configuration Release --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: Build
+      run: dotnet build VictorianTranslator.sln --no-restore
 
-    - name: Deploy to Azure WebApp
-      uses: azure/webapps-deploy@v3
+    - name: Test
+      run: dotnet test VictorianTranslator.sln --no-build --verbosity normal
+
+    - name: Publish
+      run: dotnet publish VictorianTranslator.Server/VictorianTranslator.Server.csproj -c Release -o ./publish
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
       with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-        
-    - name: Verify deployment
-      run: |
-        echo "Waiting for deployment to be ready..."
-        sleep 60
-        
-        # Try multiple health check endpoints
-        echo "Testing app health..."
-        
-        # Test basic connectivity first
-        for i in {1..5}; do
-          echo "Attempt $i: Testing https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/"
-          if curl -L -f -s --max-time 30 https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/ > /dev/null; then
-            echo "✅ Web app is responding successfully!"
-            break
-          elif [ $i -eq 5 ]; then
-            echo "❌ Web app failed to respond after 5 attempts"
-            echo "Checking app service status..."
-            az webapp show --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "state" -o tsv
-            echo "Getting recent logs..."
-            az webapp log tail --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} || true
-            exit 1
-          else
-            echo "Attempt $i failed, waiting 10 seconds..."
-            sleep 10
-          fi
-        done
-        
-        # Test API endpoints
-        echo "Testing API endpoints..."
-        if curl -L -f -s --max-time 30 https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/Lyrics/available > /dev/null; then
-          echo "✅ API endpoints are responding!"
-        else
-          echo "⚠️ API endpoints not responding, but main app is working"
-        fi
-        
-        echo "Deployment verification successful!"
-            exit 1
-          else
-            echo "Attempt $i failed, waiting 10 seconds..."
-            sleep 10
-          fi
-        done
-        
-        # Test API endpoints
-        echo "Testing API endpoints..."
-        if curl -L -f -s --max-time 30 https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net/Lyrics/available > /dev/null; then
-          echo "✅ API endpoints are responding!"
-        else
-          echo "⚠️ API endpoints not responding, but main app is working"
-        fi
-        
-        echo "Deployment verification successful!"
+        name: app-publish
+        path: ./publish
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: app-publish
+        path: ./publish
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: VictorianTranslator
+        package: ./publish
+
+    - name: Logout of Azure
+      run: az logout
