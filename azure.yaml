@@ -1,68 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 name: VictorianTranslator
+metadata:
+  template: VictorianTranslator@0.0.1
 services:
   web:
-    project: VictorianTranslator.Server
+    project: ./VictorianTranslator.Server
     language: csharp
     host: appservice
-    hooks:
-      predeploy:
-        windows:
-          shell: pwsh
-          run: dotnet publish -c Release -o ${AZURE_WEBAPP_PACKAGE_PATH} VictorianTranslator.Server
-        posix:
-          shell: sh
-          run: dotnet publish -c Release -o ${AZURE_WEBAPP_PACKAGE_PATH} VictorianTranslator.Server
-resources:
-  - name: webapp
-    type: azure.com/Azure.Core/ResourceGroup
-    resourceGroup: VictorianTranslator
-    properties:
-      template:
-        $schema: https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#
-        contentVersion: 1.0.0.0
-        resources:
-          - type: Microsoft.Web/serverfarms
-            apiVersion: "2022-03-01"
-            name: VictorianTranslator-plan
-            location: ${AZURE_LOCATION}
-            sku:
-              name: B1
-            properties:
-              reserved: true
-          - type: Microsoft.Web/sites
-            apiVersion: "2022-03-01"
-            name: VictorianTranslator
-            location: ${AZURE_LOCATION}
-            dependsOn:
-              - "[resourceId('Microsoft.Web/serverfarms', 'VictorianTranslator-plan')]"
-            properties:
-              serverFarmId: "[resourceId('Microsoft.Web/serverfarms', 'VictorianTranslator-plan')]"
-              httpsOnly: true
-              siteConfig:
-                appSettings:
-                  - name: APPINSIGHTS_INSTRUMENTATIONKEY
-                    value: ${AZURE_APP_INSIGHTS_INSTRUMENTATION_KEY}
-                  - name: APPLICATIONINSIGHTS_CONNECTION_STRING
-                    value: ${AZURE_APP_INSIGHTS_CONNECTION_STRING}
-                  - name: ApplicationInsights:ConnectionString
-                    value: ${AZURE_APP_INSIGHTS_CONNECTION_STRING}
-                  - name: ApplicationInsights:InstrumentationKey
-                    value: ${AZURE_APP_INSIGHTS_INSTRUMENTATION_KEY}
-                  - name: AzureOpenAIApiKey
-                    value: ${AZURE_OPENAI_API_KEY}
-                  - name: AzureOpenAIEndpoint
-                    value: ${AZURE_OPENAI_ENDPOINT}
-                  - name: AzureOpenAIDeploymentName
-                    value: ${AZURE_OPENAI_DEPLOYMENT_NAME}
-                  - name: AzureSpeechSubscriptionKey
-                    value: ${AZURE_SPEECH_SUBSCRIPTION_KEY}
-                  - name: AzureSpeechRegion
-                    value: ${AZURE_SPEECH_REGION}
-  - name: appinsights
-    type: azure.com/Microsoft.Insights/components@2020-02-02
-    resourceGroup: PoShared
-    existing: true
-  - name: loganalytics
-    type: azure.com/Microsoft.OperationalInsights/workspaces@2020-08-01
-    resourceGroup: PoShared
-    existing: true
+infra:
+  provider: bicep
