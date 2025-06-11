@@ -13,13 +13,23 @@ param environmentName string
 param location string
 
 // Optional parameters
-@description('Id of the user or app to assign application roles')
-param principalId string = ''
+@description('Name of the existing Application Insights in PoShared resource group')
+param sharedApplicationInsightsName string = 'app-insights-poshared'
 
 // Variables
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
+
+// Reference to existing shared resources in PoShared resource group
+resource sharedRg 'Microsoft.Resources/resourceGroups@2021-04-01' existing = {
+  name: 'PoShared'
+}
+
+resource sharedApplicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
+  name: sharedApplicationInsightsName
+  scope: sharedRg
+}
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -36,7 +46,7 @@ module web './app/web.bicep' = {
     name: '${abbrs.webSitesAppService}web-${resourceToken}'
     location: location
     tags: tags
-    applicationInsightsName: monitoring.outputs.applicationInsightsName
+    applicationInsightsConnectionString: sharedApplicationInsights.properties.ConnectionString
     appServicePlanId: appServicePlan.outputs.id
   }
 }
@@ -54,18 +64,6 @@ module appServicePlan './core/host/appserviceplan.bicep' = {
       capacity: 1
     }
     kind: 'linux'
-  }
-}
-
-// Monitor application with Azure Monitor
-module monitoring './core/monitor/monitoring.bicep' = {
-  name: 'monitoring'
-  scope: rg
-  params: {
-    location: location
-    tags: tags
-    logAnalyticsName: '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
-    applicationInsightsName: '${abbrs.insightsComponents}${resourceToken}'
   }
 }
 

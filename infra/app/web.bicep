@@ -10,15 +10,11 @@ param name string
 @description('The ID of the App Service plan into which the app should be placed.')
 param appServicePlanId string
 
-@description('The name of the Application Insights instance to use for monitoring.')
-param applicationInsightsName string
+@description('The Application Insights connection string to use for monitoring.')
+param applicationInsightsConnectionString string
 
 @description('Tags to apply to the App Service.')
 param tags object = {}
-
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: applicationInsightsName
-}
 
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   name: name
@@ -29,15 +25,14 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
   }
   properties: {
     serverFarmId: appServicePlanId
-    httpsOnly: true
-    siteConfig: {
+    httpsOnly: true    siteConfig: {
       linuxFxVersion: 'DOTNETCORE|9.0'
       minTlsVersion: '1.2'
       ftpsState: 'FtpsOnly'
       appSettings: [
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsights.properties.ConnectionString
+          value: applicationInsightsConnectionString
         }
         {
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
