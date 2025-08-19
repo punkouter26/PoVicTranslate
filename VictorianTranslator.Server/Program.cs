@@ -89,8 +89,8 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 
-// Configure endpoints
-app.MapControllers();
+// Configure endpoints - ORDER MATTERS!
+app.MapControllers(); // Handle API routes first
 app.MapRazorPages();
 
 // Enable Swagger in development
@@ -100,7 +100,30 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Add fallback route to serve the Blazor app
+// Add custom fallback route that only serves index.html for non-API requests
+app.Use(async (context, next) =>
+{
+    // Check if this is an API request (starts with known controller names or /api)
+    var path = context.Request.Path.Value?.ToLower() ?? "";
+    var isApiRequest = path.StartsWith("/lyrics") ||
+                      path.StartsWith("/translation") ||
+                      path.StartsWith("/speech") ||
+                      path.StartsWith("/health") ||
+                      path.StartsWith("/debug") ||
+                      path.StartsWith("/lyricsmanagement") ||
+                      path.StartsWith("/api") ||
+                      path.StartsWith("/swagger");
+
+    if (!isApiRequest && context.Request.Method == "GET")
+    {
+        // For non-API GET requests, serve the Blazor app
+        context.Request.Path = "/index.html";
+    }
+
+    await next();
+});
+
+// Final fallback for the Blazor app
 app.MapFallbackToFile("index.html");
 
 app.Run();

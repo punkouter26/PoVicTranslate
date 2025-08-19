@@ -25,10 +25,19 @@ resource existingApplicationInsights 'Microsoft.Insights/components@2020-02-02' 
   scope: resourceGroup('PoShared')
 }
 
-// Reference to the existing shared Log Analytics Workspace in PoShared resource group
-resource existingLogAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
-  name: 'log-iucwaxzqf3hni'
-  scope: resourceGroup('PoShared')
+// Create a dedicated Log Analytics Workspace for this application
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+  name: '${resourcePrefix}-logs-${resourceToken}'
+  location: location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    retentionInDays: 30
+  }
+  tags: {
+    'azd-env-name': environmentName
+  }
 }
 
 // User-assigned managed identity for the app service
@@ -72,23 +81,23 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
           value: '1'
         }
-        // Azure OpenAI configuration - to be set manually in Azure Portal
+        // Azure OpenAI configuration
         {
           name: 'AZURE_OPENAI_ENDPOINT'
           value: 'https://posharedopenaieastus.openai.azure.com/'
         }
         {
           name: 'AZURE_OPENAI_API_KEY'
-          value: 'your-api-key-here'
+          value: '3034cc85dd024ca29155d4534911df9f'
         }
-        // Speech service configuration - to be set manually in Azure Portal
+        // Speech service configuration
         {
           name: 'SPEECH_REGION'
           value: 'eastus2'
         }
         {
           name: 'AZURE_SPEECH_API_KEY'
-          value: 'your-speech-key-here'
+          value: '02d9dcbe18fe4725aa1a67f5fe393062'
         }
       ]
     }
@@ -99,12 +108,12 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
   }
 }
 
-// App Service diagnostic settings
+//  App Service diagnostic settings
 resource appServiceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   scope: appService
   name: 'app-service-diagnostics'
   properties: {
-    workspaceId: existingLogAnalyticsWorkspace.id
+    workspaceId: logAnalyticsWorkspace.id
     logs: [
       {
         category: 'AppServiceHTTPLogs'
