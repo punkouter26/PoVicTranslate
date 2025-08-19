@@ -29,11 +29,11 @@ Return a standardized Problem Details (RFC 7807) response to the client for pred
 UI Components: Start with built-in Blazor components. For advanced needs like data grids or charts, use a standardized component library such as Radzen.Blazor.
 Page Title: Dynamically set the HTML <title> tag in the main layout to the solution name for brand consistency.
 5. Data Persistence*
-Primary Database: Azure Table Storage is the default data store for its scalability and cost-effectiveness. The Azurite emulator must be used for all local development.
-Flexibility: For features with requirements that are not a good fit for Table Storage (e.g., relational data, complex queries, transactional consistency), Azure SQL or Cosmos DB may be used with approval from the tech lead.
-Interact with Table Storage using the official Azure.Data.Tables client library.
-Abstract data operations behind feature-specific interfaces (e.g., IProductDataService) rather than a generic Repository Pattern. This approach allows methods to be tailored to Table Storage's partition and row key structure (e.g., GetProductAsync(string category, string productId)), preventing inefficient queries and making the data access intent clear.
-Naming Convention: Azure Storage tables must follow the format PoAppName[TableName] (e.g., PoAppNameProducts).
+Primary Data Store: Use file-based storage (JSON files, text files) for simple data needs, following a structured approach for scalability and maintainability.
+Flexibility: For features with more complex requirements (e.g., relational data, complex queries, transactional consistency), Azure SQL or Cosmos DB may be used with approval from the tech lead.
+Data Access: Use System.Text.Json for JSON serialization and file I/O operations for data persistence.
+Abstract data operations behind feature-specific interfaces (e.g., IProductDataService, ILyricsDataService) rather than a generic Repository Pattern. This approach allows methods to be tailored to specific data structures and access patterns.
+File Organization: Store data files in a structured directory hierarchy under the Data folder or a dedicated data directory.
 6. Logging & Diagnostics
 Logging Framework: Implement Serilog with two sinks configured:
 Console Sink: For real-time development feedback.
@@ -55,7 +55,7 @@ Implement UI: Once the API endpoint is functional and tested, implement the Blaz
 Pull Request: A feature is considered complete when all tests are passing and the Pull Request has been reviewed and approved. The PR must pass all automated CI checks.
 Test Responsibilities:
 Unit Tests: Verify individual components or business logic in isolation.
-Integration Tests: Test a complete vertical slice, including its interaction with in-memory or emulated infrastructure like Azurite.
+Integration Tests: Test a complete vertical slice, including its interaction with file-based storage and external services.
 Functional Tests: Target the live API endpoint with HTTP requests to validate the entire request/response pipeline, including serialization, authentication, and authorization.
 8. Secrets & Configuration
 Local Development: Store secrets and user-specific keys in appsettings.Development.json and use .NET's User Secrets Manager.
@@ -66,7 +66,7 @@ The Azure Resource Group name must match the solution name (e.g., PoAppName).
 Deploy all application-specific resources to this group / Look in the PoShared resource group for shareable resrouces
 Infrastructure (Bicep):
 Run azd init to generate initial Bicep templates.
-Modify main.bicep to deploy an App Service and any other required resources (e.g., Storage Account, Key Vault).
+Modify main.bicep to deploy an App Service and any other required resources (e.g., Key Vault for secrets).
 Configure the App Service to use a pre-existing, shared App Service Plan if available.
 CI/CD:
 Set up a GitHub Action to automatically build, test, and deploy the application to Azure on every push to the main branch.

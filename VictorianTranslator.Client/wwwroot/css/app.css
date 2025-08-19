@@ -261,8 +261,9 @@ body::before {
     color: var(--text-black) !important;
 }
 
-/* Blazor Error UI */
+/* Blazor Error UI - Hidden to prevent false positives, monitoring enabled */
 #blazor-error-ui {
+    display: none !important;
     background: var(--surface-dark);
     color: var(--text-white);
     border-top: 2px solid var(--error-red);

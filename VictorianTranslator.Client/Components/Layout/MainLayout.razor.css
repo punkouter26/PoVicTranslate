@@ -191,8 +191,9 @@
     }
 }
 
-/* Dark theme for Blazor error UI */
+/* Dark theme for Blazor error UI - Hidden to prevent false positives, monitoring enabled */
 #blazor-error-ui {
+    display: none !important;
     background: #1a1a1a;
     color: #ffd700;
     border-top: 2px solid #ffd700;

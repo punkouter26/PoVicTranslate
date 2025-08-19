@@ -26,8 +26,8 @@ graph TB
         end
         
         subgraph "Storage & Data"
-            Storage[Azure Storage Account<br/>Static Files<br/>Debug Logs Backup]
-            FileShare[Azure File Share<br/>Application Logs<br/>DEBUG Folder]
+            LocalStorage[Local File Storage<br/>JSON Data Files<br/>Lyrics Collection]
+            FileSystem[File System<br/>Application Logs<br/>DEBUG Folder]
         end
     end
     
@@ -48,7 +48,7 @@ graph TB
     AppService -.->|Text-to-Speech| Speech
     AppService -.->|Telemetry| AppInsights
     AppService -.->|Secrets| KeyVault
-    AppService -.->|Log Files| Storage
+    AppService -.->|Log Files| LocalStorage
     
     %% Monitoring Connections
     AppInsights -.->|Logs & Metrics| LogAnalytics
@@ -61,8 +61,8 @@ graph TB
     KeyVault -.->|Private Link| VNet
     
     %% Storage Connections
-    AppService -.->|Debug Logs| FileShare
-    FileShare -.->|Backup| Storage
+    AppService -.->|Debug Logs| FileSystem
+    FileSystem -.->|Local Files| LocalStorage
     
     %% Development Workflow
     DevMachine -.->|Push Code| GitHub
@@ -139,6 +139,6 @@ graph TB
     class OpenAI,Speech ai
     class AppInsights,LogAnalytics monitoring
     class KeyVault,VNet security
-    class Storage,FileShare storage
+    class LocalStorage,FileSystem storage
     class GitHub,AZD,DevMachine,AppSettings,EnvVars,LocalSettings development
     class SharedPlan,SharedServices shared

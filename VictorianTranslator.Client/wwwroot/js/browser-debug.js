@@ -56,23 +56,46 @@ class BrowserDebugService {
     }
 
     captureErrors() {
+        // Enhanced error capturing with Blazor-specific handling
         window.addEventListener('error', (event) => {
+            console.error('🚨 JavaScript Error Captured:', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                error: event.error,
+                stack: event.error?.stack
+            });
+            
             this.logStructuralFailure('Browser', 'JavaScript Error', {
                 message: event.message,
                 filename: event.filename,
                 lineno: event.lineno,
                 colno: event.colno,
                 error: event.error?.toString(),
-                stack: event.error?.stack
+                stack: event.error?.stack,
+                blazorErrorUI: document.getElementById('blazor-error-ui')?.style.display
             });
         });
 
         window.addEventListener('unhandledrejection', (event) => {
-            this.logStructuralFailure('Browser', 'Unhandled Promise Rejection', {
-                reason: event.reason?.toString(),
+            console.error('🚨 Unhandled Promise Rejection:', {
+                reason: event.reason,
                 stack: event.reason?.stack
             });
+            
+            this.logStructuralFailure('Browser', 'Unhandled Promise Rejection', {
+                reason: event.reason?.toString(),
+                stack: event.reason?.stack,
+                blazorErrorUI: document.getElementById('blazor-error-ui')?.style.display
+            });
         });
+
+        // Blazor-specific error monitoring
+        this.monitorBlazorErrorUI();
+        
+        // Monitor for .NET runtime errors
+        this.monitorDotNetErrors();
     }
 
     capturePageEvents() {
@@ -264,6 +287,92 @@ class BrowserDebugService {
             componentName,
             lifecycle,
             ...data
+        });
+    }
+
+    monitorBlazorErrorUI() {
+        // Monitor when Blazor error UI becomes visible
+        const errorUI = document.getElementById('blazor-error-ui');
+        if (errorUI) {
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        const display = errorUI.style.display;
+                        const isVisible = display !== 'none' && display !== '';
+                        
+                        if (isVisible) {
+                            console.error('🚨 Blazor Error UI became visible!', {
+                                display: display,
+                                innerHTML: errorUI.innerHTML,
+                                computedStyle: window.getComputedStyle(errorUI).display
+                            });
+                            
+                            this.logStructuralFailure('Blazor', 'Error UI Visible', {
+                                display: display,
+                                computedDisplay: window.getComputedStyle(errorUI).display,
+                                errorUIContent: errorUI.innerHTML,
+                                timestamp: new Date().toISOString()
+                            });
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(errorUI, {
+                attributes: true,
+                attributeFilter: ['style', 'class']
+            });
+            
+            // Also check initial state
+            const isInitiallyVisible = window.getComputedStyle(errorUI).display !== 'none';
+            if (isInitiallyVisible) {
+                console.warn('🚨 Blazor Error UI is initially visible!');
+                this.logStructuralFailure('Blazor', 'Error UI Initially Visible', {
+                    computedDisplay: window.getComputedStyle(errorUI).display,
+                    errorUIContent: errorUI.innerHTML
+                });
+            }
+        }
+    }
+
+    monitorDotNetErrors() {
+        // Monitor for .NET WebAssembly runtime errors
+        if (window.DotNet) {
+            console.log('🔍 Monitoring .NET runtime...');
+            
+            // Override DotNet error reporting if available
+            const originalInvokeMethod = window.DotNet.invokeMethod;
+            if (originalInvokeMethod) {
+                window.DotNet.invokeMethod = function(...args) {
+                    try {
+                        return originalInvokeMethod.apply(this, args);
+                    } catch (error) {
+                        console.error('🚨 .NET Method Invocation Error:', error);
+                        window.browserDebugService?.logStructuralFailure('DotNet', 'Method Invocation Error', {
+                            args: args,
+                            error: error.toString(),
+                            stack: error.stack
+                        });
+                        throw error;
+                    }
+                };
+            }
+        }
+        
+        // Monitor Blazor WebAssembly startup
+        window.addEventListener('blazor:started', () => {
+            console.log('✅ Blazor WebAssembly started successfully');
+            this.logEvent('Blazor', 'WebAssembly Started', {
+                timestamp: new Date().toISOString()
+            });
+        });
+        
+        window.addEventListener('blazor:error', (event) => {
+            console.error('🚨 Blazor Error Event:', event.detail);
+            this.logStructuralFailure('Blazor', 'Runtime Error', {
+                detail: event.detail,
+                timestamp: new Date().toISOString()
+            });
         });
     }
 }

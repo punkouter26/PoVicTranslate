@@ -29,6 +29,43 @@
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="js/browser-debug.js"></script>
     <script>
+        // Enhanced error monitoring immediately on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Starting enhanced Blazor error monitoring...');
+            
+            // Check error UI visibility immediately
+            const errorUI = document.getElementById('blazor-error-ui');
+            if (errorUI) {
+                const computedStyle = window.getComputedStyle(errorUI);
+                console.log('🔍 Initial Blazor Error UI state:', {
+                    display: errorUI.style.display,
+                    computedDisplay: computedStyle.display,
+                    visibility: computedStyle.visibility,
+                    opacity: computedStyle.opacity,
+                    innerHTML: errorUI.innerHTML
+                });
+                
+                // Monitor for changes
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        console.log('🚨 Blazor Error UI mutation detected:', {
+                            type: mutation.type,
+                            attributeName: mutation.attributeName,
+                            target: mutation.target,
+                            oldValue: mutation.oldValue
+                        });
+                    });
+                });
+                
+                observer.observe(errorUI, {
+                    attributes: true,
+                    childList: true,
+                    subtree: true,
+                    attributeOldValue: true
+                });
+            }
+        });
+        
         window.playAudio = (audioBytes) => {
             const blob = new Blob([new Uint8Array(audioBytes)], { type: 'audio/mpeg' });
             const url = URL.createObjectURL(blob);
