@@ -8,12 +8,12 @@ namespace VictorianTranslator.Server.Controllers
     [Route("[controller]")]
     public class SpeechController : ControllerBase
     {
-        private readonly ISpeechService _speechService;
+        private readonly IAudioSynthesisService _audioSynthesisService;
         private readonly ILogger<SpeechController> _logger;
 
-        public SpeechController(ISpeechService speechService, ILogger<SpeechController> logger)
+        public SpeechController(IAudioSynthesisService audioSynthesisService, ILogger<SpeechController> logger)
         {
-            _speechService = speechService;
+            _audioSynthesisService = audioSynthesisService;
             _logger = logger;
         }
 
@@ -28,7 +28,7 @@ namespace VictorianTranslator.Server.Controllers
             try
             {
                 _logger.LogInformation("Received request to synthesize speech for text: '{Text}'", text);
-                byte[] audioBytes = await _speechService.SynthesizeSpeechAsync(text);
+                byte[] audioBytes = await _audioSynthesisService.SynthesizeSpeechAsync(text);
                 _logger.LogInformation("Successfully synthesized speech. Returning audio stream.");
 
                 // Save the audio to a file for debugging

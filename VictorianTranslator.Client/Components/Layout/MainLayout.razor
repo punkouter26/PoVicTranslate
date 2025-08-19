@@ -1,28 +1,38 @@
-﻿@inherits LayoutComponentBase
+﻿@namespace VictorianTranslator.Client.Components.Layout
+@inherits LayoutComponentBase
 
-<style>
-    body {
-        background-color: #121212;
-    }
-    
-    .site-header {
-        color: #ffd700;
-        font-family: 'Permanent Marker', cursive;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    }
-</style>
-
-<div class="page">
-    <header class="text-center py-3">
-        <h1 class="site-header display-4">PoVicTranslate</h1>
+<div class="urban-page">
+    <header class="urban-header">
+        <div class="header-content">
+            <div class="brand-section">
+                <h1 class="urban-brand">PoVicTranslate</h1>
+                <div class="tagline">Where Street Meets Elite</div>
+            </div>
+            <div class="header-actions">
+                <a href="/diag" class="diag-link">
+                    <i class="fas fa-cog"></i>
+                    <span>System</span>
+                </a>
+            </div>
+        </div>
+        <div class="header-glow"></div>
     </header>
-    <main>
-        <div class="content px-4">
+    
+    <main class="urban-main">
+        <div class="main-content">
             @Body
         </div>
     </main>
-    <footer class="text-center text-muted py-2 mt-4" style="font-size: 0.8em;">
-        <a href="/diag" style="color: #ffd700; text-decoration: none;">System Diagnostics</a>
+    
+    <footer class="urban-footer">
+        <div class="footer-content">
+            <div class="footer-text">
+                Transform your flow into sophistication
+            </div>
+            <div class="footer-credits">
+                Powered by AI • Built for the Culture
+            </div>
+        </div>
     </footer>
 </div>
 

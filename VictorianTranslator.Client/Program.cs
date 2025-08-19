@@ -14,5 +14,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddScoped<ClientTranslationService>();
 builder.Services.AddScoped<ClientLyricsService>();
 builder.Services.AddScoped<ClientSpeechService>();
+builder.Services.AddScoped<ITranslationOrchestrator, TranslationOrchestrator>();
 
 await builder.Build().RunAsync();

@@ -8,4 +8,4 @@ namespace VictorianTranslator.Services
         Task<List<string>> GetAvailableSongsAsync();
         Task<string> GetLyricsAsync(string songFileName);
     }
-} 
+}

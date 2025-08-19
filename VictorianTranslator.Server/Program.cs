@@ -1,6 +1,7 @@
 using VictorianTranslator.Configuration;
 using VictorianTranslator.Services;
 using VictorianTranslator.Server.Services; // Added for ISpeechService and SpeechService
+using VictorianTranslator.Server.Middleware; // Added for DebugLoggingMiddleware
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,7 +40,11 @@ builder.Services.Configure<ApiSettings>(
 // Register Services
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ILyricsService, LyricsService>();
-builder.Services.AddScoped<VictorianTranslator.Server.Services.ISpeechService, VictorianTranslator.Server.Services.SpeechService>();
+builder.Services.AddScoped<IAudioSynthesisService, AudioSynthesisService>();
+builder.Services.AddScoped<IConfigurationValidator, ConfigurationValidator>();
+builder.Services.AddScoped<IDiagnosticService, DiagnosticService>();
+builder.Services.AddScoped<ILyricsManagementService, LyricsManagementService>();
+builder.Services.AddSingleton<IDebugLogService, DebugLogService>(); // Add Debug Log Service as singleton
 
 // Add CORS policy
 builder.Services.AddCors(options =>
@@ -77,6 +82,7 @@ else
 }
 
 app.UseCors(); // Always use CORS
+app.UseMiddleware<DebugLoggingMiddleware>(); // Add debug logging middleware
 app.UseHttpsRedirection();
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();

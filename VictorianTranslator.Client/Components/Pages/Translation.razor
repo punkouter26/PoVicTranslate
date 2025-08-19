@@ -2,436 +2,215 @@
 @page "/translate"
 @namespace VictorianTranslator.Components.Pages
 @using VictorianTranslator.Client.Services
-@using VictorianTranslator.Client.Models
+@using VictorianTranslator.Client.ViewModels
+@using VictorianTranslator.Client.Extensions
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
-@inject ClientTranslationService ClientTranslationService
-@inject ClientLyricsService ClientLyricsService
-@inject ClientSpeechService ClientSpeechService
-@inject IJSRuntime JSRuntime
+@inject ITranslationOrchestrator TranslationOrchestrator
 @rendermode InteractiveWebAssembly
 
 <PageTitle>PoVicTranslate</PageTitle>
 
-<style>
-    @@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap');
-
-    body {
-        background-color: #121212;
-    }
-
-    .urban-container {
-        background-color: #1a1a1a;
-        color: #fff;
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .urban-container::before {
-        content: 'W';
-        font-family: 'Permanent Marker', cursive;
-        position: absolute;
-        top: -20px;
-        right: -20px;
-        font-size: 200px;
-        opacity: 0.03;
-        transform: rotate(15deg);
-    }
-
-    .urban-title {
-        font-family: 'Permanent Marker', cursive;
-        color: #ffd700;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        font-size: 2.5rem;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .song-controls {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-
-    .song-controls .urban-select {
-        flex: 1;
-    }
-
-    .urban-select {
-        background-color: #2d2d2d !important;
-        color: #fff !important;
-        border: 2px solid #ffd700 !important;
-        border-radius: 10px !important;
-    }
-
-    .urban-select option {
-        background-color: #2d2d2d;
-        color: #fff;
-    }
-
-    .urban-textarea {
-        background-color: #2d2d2d !important;
-        color: #fff !important;
-        border: 2px solid #ffd700 !important;
-        border-radius: 10px !important;
-        resize: vertical;
-    }
-
-    .word-counter {
-        color: #ffd700;
-        font-size: 0.9rem;
-        text-align: right;
-        margin-top: 0.5rem;
-    }
-
-    .word-counter.limit-reached {
-        color: #ff4444;
-    }
-
-    .urban-btn {
-        background: linear-gradient(45deg, #ffd700, #ff8c00);
-        border: none;
-        color: #000;
-        font-weight: bold;
-        padding: 10px 25px;
-        border-radius: 25px;
-        text-transform: uppercase;
-        transition: all 0.2s;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .urban-btn:hover:not(:disabled) {
-        transform: scale(1.05);
-        background: linear-gradient(45deg, #ff8c00, #ffd700);
-    }
-
-    .urban-btn:disabled {
-        opacity: 0.7;
-    }
-
-    .urban-btn-secondary {
-        background: linear-gradient(45deg, #2d2d2d, #404040);
-        border: 2px solid #ffd700;
-        color: #ffd700;
-    }
-
-    .urban-btn-secondary:hover:not(:disabled) {
-        background: linear-gradient(45deg, #404040, #2d2d2d);
-    }
-
-    .urban-result {
-        background-color: #2d2d2d;
-        border: 2px solid #ffd700;
-        border-radius: 10px;
-        color: #fff;
-        position: relative;
-    }
-
-    .copy-btn {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
-        background: none;
-        border: none;
-        color: #ffd700;
-        cursor: pointer;
-        padding: 0.5rem;
-        transition: transform 0.2s;
-    }
-
-    .copy-btn:hover {
-        transform: scale(1.1);
-    }
-
-    .urban-divider {
-        color: #ffd700;
-        font-family: 'Permanent Marker', cursive;
-        font-size: 1.2rem;
-        text-align: center;
-        margin: 1rem 0;
-    }
-
-    .urban-label {
-        color: #ffd700;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-
-    .urban-error {
-        background-color: rgba(255, 68, 68, 0.1);
-        border: 2px solid #ff4444;
-        color: #ff4444;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-top: 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    }
-
-    .loading-spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #ffd700;
-        border-top: 5px solid transparent;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @@keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-</style>
-
-<div class="container mt-4">
+<div class="main-wrapper animate-fade-in">
     <div class="urban-container">
-        @if(IsLoading)
+        @if(_viewModel.IsLoading)
         {
             <div class="loading-overlay">
                 <div class="loading-spinner"></div>
+                <div class="loading-text">Initializing the culture...</div>
             </div>
         }
 
-        <h1 class="urban-title">
-            Urban Rap → Victorian English
-            <small style="font-size: 1rem; opacity: 0.7">(Wu-Tang Edition)</small>
-        </h1>
+        <div class="hero-section">
+            <h1 class="urban-title">
+                <span class="title-main">Street → Sophisticated</span>
+                <small class="title-sub">Transform rap lyrics into Victorian elegance</small>
+            </h1>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <i class="fas fa-music"></i>
+                    <span>246 Songs</span>
+                </div>
+                <div class="stat-divider">•</div>
+                <div class="stat-item">
+                    <i class="fas fa-magic"></i>
+                    <span>AI Powered</span>
+                </div>
+                <div class="stat-divider">•</div>
+                <div class="stat-item">
+                    <i class="fas fa-crown"></i>
+                    <span>Wu-Tang Edition</span>
+                </div>
+            </div>
+        </div>
         
-        <div class="song-controls">
-            <select id="songSelect" class="form-select urban-select" @onchange="LoadLyricsAsync">
-                <option value="">-- Select a Wu-Tang Song --</option>
-                @foreach (var song in AvailableSongs)
+        <div class="input-section">
+            <div class="song-selector-wrapper">
+                <label class="urban-label">
+                    <i class="fas fa-compact-disc"></i>
+                    Choose Your Track
+                </label>
+                <div class="song-controls">
+                    <select id="songSelect" class="form-select urban-select" @onchange="OnSongSelectedAsync">
+                        <option value="">-- Drop that beat, select a Wu-Tang classic --</option>
+                        @foreach (var song in _viewModel.AvailableSongs)
+                        {
+                            <option value="@song">@song.Replace(".txt", "").Replace("_", " ").ToTitleCase()</option>
+                        }
+                    </select>
+                    <button class="urban-btn urban-btn-secondary shuffle-btn" @onclick="OnLoadRandomSongAsync" disabled="@(!_viewModel.AvailableSongs.Any())">
+                        <i class="fas fa-random"></i>
+                        <span>Random</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section-divider">
+                <span class="divider-text">OR DROP YOUR OWN BARS</span>
+                <div class="divider-line"></div>
+            </div>
+
+            <div class="custom-input-wrapper">
+                <label for="inputText" class="urban-label">
+                    <i class="fas fa-microphone"></i>
+                    Your Lyrics
+                </label>
+                <div class="textarea-wrapper">
+                    <textarea @bind="_viewModel.InputText" 
+                              @bind:event="oninput"
+                              class="form-control urban-textarea" 
+                              id="inputText" 
+                              rows="6"
+                              placeholder="Spit your verses here... We'll make 'em sound royal 👑"
+                              disabled="@_viewModel.IsTranslating"></textarea>
+                    <div class="textarea-overlay">
+                        <div class="word-counter @(_viewModel.WordCount > 200 ? "limit-reached" : "")">
+                            @_viewModel.WordCount / 200 words
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-section">
+            <button class="urban-btn primary-action" @onclick="OnTranslateAsync" disabled="@(!_viewModel.CanTranslate)">
+                @if (_viewModel.IsTranslating)
                 {
-                    <option value="@song">@song.Replace(".txt", "")</option>
+                    <div class="btn-content translating">
+                        <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+                        <span>Elevating your flow...</span>
+                    </div>
                 }
-            </select>
-            <button class="urban-btn urban-btn-secondary" @onclick="LoadRandomSongAsync" disabled="@(!AvailableSongs.Any())">
-                <i class="fas fa-random"></i> Random
+                else
+                {
+                    <div class="btn-content">
+                        <i class="fas fa-magic"></i>
+                        <span>Transform to Victorian</span>
+                    </div>
+                }
             </button>
         </div>
 
-        <div class="urban-divider">
-            - OR -
-        </div>
-
-        <div class="mb-3">
-            <label for="inputText" class="urban-label">Drop Your Rap Lyrics:</label>
-            <textarea @bind="InputText" 
-                      @bind:event="oninput"
-                      class="form-control urban-textarea" 
-                      id="inputText" 
-                      rows="5"
-                      placeholder="Type or paste your lyrics here..."
-                      disabled="@IsTranslating"></textarea>
-            <div class="word-counter @(WordCount > 200 ? "limit-reached" : "")">
-                @WordCount / 200 words
-            </div>
-        </div>
-        
-        <button class="urban-btn mb-3" @onclick="TranslateTextAsync" disabled="@(IsTranslating || WordCount > 200)">
-            @if (IsTranslating)
-            {
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span class="ms-2">Translating...</span>
-            }
-            else
-            {
-                <span>Make It Victorian</span>
-            }
-        </button>
-
-        @if (!string.IsNullOrEmpty(TranslatedText))
+        @if (!string.IsNullOrEmpty(_viewModel.TranslatedText))
         {
-            <div class="mb-3">
-                <label class="urban-label">Victorian Translation:</label>
-                <div class="p-3 urban-result">
-                    <button class="copy-btn" @onclick="CopyToClipboardAsync" title="Copy to clipboard">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    @TranslatedText
+            <div class="results-section animate-slide-up">
+                <label class="urban-label results-label">
+                    <i class="fas fa-scroll"></i>
+                    Victorian Translation
+                </label>
+                <div class="result-card">
+                    <div class="result-actions">
+                        <button class="copy-btn" @onclick="OnCopyToClipboardAsync" title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="result-content">
+                        @_viewModel.TranslatedText
+                    </div>
                 </div>
-                <button class="urban-btn mt-2" @onclick="SpeakTextAsync" disabled="@IsSpeaking">
-                    @if (IsSpeaking)
-                    {
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        <span class="ms-2">Reading...</span>
-                    }
-                    else
-                    {
-                        <i class="fas fa-volume-up"></i>
-                        <span>Speak It Proper</span>
-                    }
-                </button>
+                
+                <div class="audio-section">
+                    <button class="urban-btn speech-btn" @onclick="OnSpeakTextAsync" disabled="@(!_viewModel.CanSpeak)">
+                        @if (_viewModel.IsSpeaking)
+                        {
+                            <div class="btn-content speaking">
+                                <div class="audio-visualizer">
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                </div>
+                                <span>Speaking with proper accent...</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="btn-content">
+                                <i class="fas fa-volume-up"></i>
+                                <span>Hear It Spoken</span>
+                            </div>
+                        }
+                    </button>
+                </div>
             </div>
         }
 
-        @if (!string.IsNullOrEmpty(ErrorMessage))
+        @if (!string.IsNullOrEmpty(_viewModel.ErrorMessage))
         {
-            <div class="urban-error">
-                <i class="fas fa-exclamation-circle"></i>
-                @ErrorMessage
+            <div class="error-section animate-bounce">
+                <div class="urban-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="error-content">
+                        <div class="error-title">Oops! Something went sideways</div>
+                        <div class="error-message">@_viewModel.ErrorMessage</div>
+                    </div>
+                </div>
             </div>
         }
     </div>
 </div>
 
 @code {
-    private string InputText { get; set; } = string.Empty;
-    private string TranslatedText { get; set; } = string.Empty;
-    private string ErrorMessage { get; set; } = string.Empty;
-    private bool IsTranslating { get; set; }
-    private bool IsSpeaking { get; set; }
-    private bool IsLoading { get; set; }
-    private List<string> AvailableSongs { get; set; } = new();
-
-    private int WordCount => string.IsNullOrWhiteSpace(InputText)
-        ? 0
-        : InputText.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
+    private readonly TranslationViewModel _viewModel = new();
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            IsLoading = true;
-            AvailableSongs = await ClientLyricsService.GetAvailableSongsAsync();
-        }
-        catch (Exception)
-        {
-            ErrorMessage = "Error loading songs.";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        await TranslationOrchestrator.InitializeAsync(_viewModel);
     }
 
-    private async Task LoadRandomSongAsync()
-    {
-        if (!AvailableSongs.Any()) return;
-
-        var random = new Random();
-        var randomSong = AvailableSongs[random.Next(AvailableSongs.Count)];
-        await LoadSongAsync(randomSong);
-    }
-
-    private async Task LoadLyricsAsync(ChangeEventArgs e)
+    private async Task OnSongSelectedAsync(ChangeEventArgs e)
     {
         var selectedSong = e.Value?.ToString();
         if (string.IsNullOrEmpty(selectedSong))
         {
-            InputText = string.Empty;
+            _viewModel.InputText = string.Empty;
             return;
         }
 
-        await LoadSongAsync(selectedSong);
+        await TranslationOrchestrator.LoadSongAsync(_viewModel, selectedSong);
     }
 
-    private async Task LoadSongAsync(string songFileName)
+    private async Task OnLoadRandomSongAsync()
     {
-        try
-        {
-            IsLoading = true;
-            ErrorMessage = string.Empty;
-            InputText = await ClientLyricsService.GetLyricsAsync(songFileName);
-        }
-        catch (Exception)
-        {
-            ErrorMessage = "Error loading lyrics.";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        await TranslationOrchestrator.LoadRandomSongAsync(_viewModel);
     }
 
-    private async Task CopyToClipboardAsync()
+    private async Task OnTranslateAsync()
     {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", TranslatedText);
-        }
-        catch (Exception)
-        {
-            ErrorMessage = "Failed to copy text to clipboard";
-        }
+        await TranslationOrchestrator.TranslateTextAsync(_viewModel);
     }
 
-    private async Task TranslateTextAsync()
+    private async Task OnSpeakTextAsync()
     {
-        try
-        {
-            ErrorMessage = string.Empty;
-            if (string.IsNullOrWhiteSpace(InputText))
-            {
-                ErrorMessage = "Please enter some text to translate.";
-                return;
-            }
-
-            if (WordCount > 200)
-            {
-                ErrorMessage = "Please reduce the text to 200 words or less.";
-                return;
-            }
-
-            IsTranslating = true;
-            TranslatedText = await ClientTranslationService.TranslateText(InputText);
-        }
-        catch (Exception)
-        {
-            ErrorMessage = "Translation error: An unexpected error occurred.";
-            TranslatedText = string.Empty;
-        }
-        finally
-        {
-            IsTranslating = false;
-        }
+        await TranslationOrchestrator.SpeakTextAsync(_viewModel);
     }
 
-    private async Task SpeakTextAsync()
+    private async Task OnCopyToClipboardAsync()
     {
-        try
+        var success = await TranslationOrchestrator.CopyToClipboardAsync(_viewModel.TranslatedText);
+        if (!success)
         {
-            ErrorMessage = string.Empty;
-            if (string.IsNullOrWhiteSpace(TranslatedText))
-            {
-                ErrorMessage = "No translated text to read.";
-                return;
-            }
-
-            IsSpeaking = true;
-            byte[] audioBytes = await ClientSpeechService.SynthesizeSpeechAsync(TranslatedText);
-            await JSRuntime.InvokeVoidAsync("playAudio", audioBytes);
-        }
-        catch (Exception)
-        {
-            ErrorMessage = "Text-to-speech error: An unexpected error occurred.";
-        }
-        finally
-        {
-            IsSpeaking = false;
+            _viewModel.ErrorMessage = "Failed to copy text to clipboard";
         }
     }
 }

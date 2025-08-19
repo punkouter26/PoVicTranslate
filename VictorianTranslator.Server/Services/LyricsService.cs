@@ -15,7 +15,7 @@ namespace VictorianTranslator.Services
         public LyricsService(IWebHostEnvironment webHostEnvironment)
         {
             _lyricsDirectory = Path.Combine(webHostEnvironment.ContentRootPath, "..", "scrapes");
-            
+
             // Create directory if it doesn't exist
             if (!Directory.Exists(_lyricsDirectory))
             {
@@ -47,7 +47,7 @@ namespace VictorianTranslator.Services
 
             var fullText = await File.ReadAllTextAsync(filePath);
             var words = fullText.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-            
+
             if (words.Length <= MaxWords)
             {
                 return fullText;

@@ -1,0 +1,111 @@
+graph TB
+    subgraph "Frontend - Blazor WebAssembly"
+        App["App.razor<br/>Root Component"]
+        Routes["Routes.razor<br/>Client Routing"]
+        
+        subgraph "Pages"
+            Translation["Translation.razor<br/>Main Interface"]
+            Diag["Diag.razor<br/>Diagnostics"]
+            Error["Error.razor<br/>Error Handling"]
+        end
+        
+        subgraph "Client Services"
+            ClientTranslation["ClientTranslationService<br/>API Communication"]
+            ClientLyrics["ClientLyricsService<br/>Lyrics Management"]
+            ClientSpeech["ClientSpeechService<br/>TTS Coordination"]
+        end
+        
+        subgraph "Browser Integration"
+            JSInterop["JavaScript Interop<br/>Audio & DOM"]
+            BrowserDebug["BrowserDebugService<br/>Client-side Logging"]
+        end
+    end
+    
+    subgraph "Backend - ASP.NET Core Web API"
+        Program["Program.cs<br/>Startup & DI"]
+        
+        subgraph "Controllers"
+            TranslationController["TranslationController<br/>Translation API"]
+            SpeechController["SpeechController<br/>TTS API"]
+            LyricsController["LyricsController<br/>Lyrics API"]
+            DebugController["DebugController<br/>Debug API"]
+        end
+        
+        subgraph "Services"
+            TranslationService["TranslationService<br/>Business Logic"]
+            SpeechService["SpeechService<br/>TTS Processing"]
+            LyricsService["LyricsService<br/>File Management"]
+            DebugLogService["DebugLogService<br/>Logging System"]
+        end
+        
+        subgraph "Middleware"
+            DebugMiddleware["DebugLoggingMiddleware<br/>Request/Response Logging"]
+            CORS["CORS Middleware<br/>Cross-Origin Support"]
+        end
+    end
+    
+    subgraph "Azure Services"
+        OpenAI["Azure OpenAI<br/>GPT-4o Translation"]
+        Speech["Azure Speech<br/>Text-to-Speech"]
+        AppInsights["Application Insights<br/>Telemetry"]
+    end
+    
+    subgraph "Configuration & Logging"
+        Config["ApiSettings<br/>Configuration"]
+        Serilog["Serilog<br/>Structured Logging"]
+        DebugFiles["DEBUG Folder<br/>Log Files & Reports"]
+    end
+    
+    %% Frontend Connections
+    App --> Routes
+    Routes --> Translation
+    Routes --> Diag
+    Routes --> Error
+    
+    Translation --> ClientTranslation
+    Translation --> ClientLyrics
+    Translation --> ClientSpeech
+    Translation --> JSInterop
+    Translation --> BrowserDebug
+    
+    %% Client to API Connections
+    ClientTranslation -.->|HTTP POST| TranslationController
+    ClientLyrics -.->|HTTP GET| LyricsController
+    ClientSpeech -.->|HTTP POST| SpeechController
+    BrowserDebug -.->|HTTP POST| DebugController
+    
+    %% Controller to Service Connections
+    TranslationController --> TranslationService
+    SpeechController --> SpeechService
+    LyricsController --> LyricsService
+    DebugController --> DebugLogService
+    
+    %% Service to Azure Connections
+    TranslationService -.->|API Call| OpenAI
+    SpeechService -.->|API Call| Speech
+    
+    %% Middleware Flow
+    DebugMiddleware --> TranslationController
+    DebugMiddleware --> SpeechController
+    DebugMiddleware --> LyricsController
+    DebugMiddleware --> DebugController
+    
+    %% Configuration & Logging
+    Program --> Config
+    Program --> Serilog
+    DebugLogService --> DebugFiles
+    DebugMiddleware --> DebugLogService
+    
+    %% Monitoring
+    Program -.->|Telemetry| AppInsights
+    
+    %% Styling
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef backend fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef azure fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef config fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class App,Routes,Translation,Diag,Error,ClientTranslation,ClientLyrics,ClientSpeech,JSInterop,BrowserDebug frontend
+    class Program,TranslationController,SpeechController,LyricsController,DebugController,TranslationService,SpeechService,LyricsService,DebugLogService,DebugMiddleware,CORS backend
+    class OpenAI,Speech,AppInsights azure
+    class Config,Serilog,DebugFiles config
