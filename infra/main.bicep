@@ -16,6 +16,57 @@ resource existingAppServicePlan 'Microsoft.Web/serverfarms@2023-12-01' existing 
   scope: resourceGroup('PoShared')
 }
 
+// Create Azure OpenAI Service
+resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+  name: 'PoVicTranslate-OpenAI'
+  location: location
+  kind: 'OpenAI'
+  sku: {
+    name: 'S0'
+  }
+  properties: {
+    customSubDomainName: 'povictranslate-openai'
+    publicNetworkAccess: 'Enabled'
+  }
+  tags: {
+    'azd-env-name': environmentName
+  }
+}
+
+// Deploy GPT-4o model
+resource gpt4oDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
+  parent: openAI
+  name: 'gpt-4o'
+  sku: {
+    name: 'Standard'
+    capacity: 10
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4o'
+      version: '2024-08-06'
+    }
+  }
+}
+
+// Create Azure Speech Service
+resource speechService 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+  name: 'PoVicTranslate-Speech'
+  location: location
+  kind: 'SpeechServices'
+  sku: {
+    name: 'S0'
+  }
+  properties: {
+    customSubDomainName: 'povictranslate-speech'
+    publicNetworkAccess: 'Enabled'
+  }
+  tags: {
+    'azd-env-name': environmentName
+  }
+}
+
 // Create Log Analytics Workspace for Application Insights
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: 'PoVicTranslate'
@@ -67,26 +118,27 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
           value: '1'
         }
-        // These values will be overridden by GitHub Actions or manually configured
+        // Azure OpenAI Configuration
         {
           name: 'ApiSettings__AzureOpenAIApiKey'
-          value: ''
+          value: openAI.listKeys().key1
         }
         {
           name: 'ApiSettings__AzureOpenAIEndpoint'
-          value: ''
+          value: openAI.properties.endpoint
         }
         {
           name: 'ApiSettings__AzureOpenAIDeploymentName'
-          value: ''
+          value: 'gpt-4o'
         }
+        // Azure Speech Service Configuration
         {
           name: 'ApiSettings__AzureSpeechSubscriptionKey'
-          value: ''
+          value: speechService.listKeys().key1
         }
         {
           name: 'ApiSettings__AzureSpeechRegion'
-          value: ''
+          value: location
         }
       ]
     }
@@ -132,3 +184,10 @@ output AZURE_LOCATION string = location
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = applicationInsights.properties.ConnectionString
 output SERVICE_VICTORIANUPDATER_SERVER_NAME string = appService.name
 output SERVICE_VICTORIANUPDATER_SERVER_URI string = 'https://${appService.properties.defaultHostName}'
+
+// Azure OpenAI outputs
+output AZURE_OPENAI_ENDPOINT string = openAI.properties.endpoint
+output AZURE_OPENAI_DEPLOYMENT_NAME string = 'gpt-4o'
+
+// Azure Speech Service outputs
+output AZURE_SPEECH_REGION string = location
