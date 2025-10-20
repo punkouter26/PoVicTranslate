@@ -21,10 +21,4 @@
     <ProjectReference Include="..\VictorianTranslator.Client\VictorianTranslator.Client.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="web.config">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-  </ItemGroup>
-
 </Project>
