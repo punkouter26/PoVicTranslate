@@ -13,12 +13,12 @@ public class DebugLogEntry
     public string? ExceptionDetails { get; set; }
     public string SessionId { get; set; } = string.Empty;
     public string? UserId { get; set; }
-    
+
     public T? GetData<T>() where T : class
     {
         if (string.IsNullOrEmpty(DataJson))
             return null;
-            
+
         try
         {
             return JsonSerializer.Deserialize<T>(DataJson);
@@ -28,14 +28,14 @@ public class DebugLogEntry
             return null;
         }
     }
-    
+
     public void SetData<T>(T data) where T : class
     {
         if (data != null)
         {
-            DataJson = JsonSerializer.Serialize(data, new JsonSerializerOptions 
-            { 
-                WriteIndented = true 
+            DataJson = JsonSerializer.Serialize(data, new JsonSerializerOptions
+            {
+                WriteIndented = true
             });
         }
     }

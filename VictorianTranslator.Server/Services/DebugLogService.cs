@@ -12,19 +12,19 @@ public class DebugLogService : IDebugLogService
     private readonly string _reportsPath;
     private readonly string _sessionId;
     private readonly SemaphoreSlim _fileLock = new(1, 1);
-    
+
     public DebugLogService(ILogger<DebugLogService> logger, IWebHostEnvironment environment)
     {
         _logger = logger;
         _sessionId = Guid.NewGuid().ToString("N")[..8];
-        
+
         var debugRoot = Path.Combine(environment.ContentRootPath, "..", "DEBUG");
         _debugLogPath = Path.Combine(debugRoot, "logs");
         _reportsPath = Path.Combine(debugRoot, "reports");
-        
+
         Directory.CreateDirectory(_debugLogPath);
         Directory.CreateDirectory(_reportsPath);
-        
+
         _ = Task.Run(async () => await LogInitializationAsync("DebugLogService", "Debug logging service initialized", new { SessionId = _sessionId }));
     }
 
@@ -38,10 +38,10 @@ public class DebugLogService : IDebugLogService
             Level = "Info",
             SessionId = _sessionId
         };
-        
+
         if (data != null)
             entry.SetData(data);
-            
+
         await WriteLogEntryAsync(entry);
         _logger.LogInformation("[INIT] {Component}: {Message}", component, message);
     }
@@ -56,10 +56,10 @@ public class DebugLogService : IDebugLogService
             Level = "Info",
             SessionId = _sessionId
         };
-        
+
         if (data != null)
             entry.SetData(data);
-            
+
         await WriteLogEntryAsync(entry);
         _logger.LogInformation("[EVENT] {EventType}: {Message}", eventType, message);
     }
@@ -74,10 +74,10 @@ public class DebugLogService : IDebugLogService
             Level = "Warning",
             SessionId = _sessionId
         };
-        
+
         if (diagnosticData != null)
             entry.SetData(diagnosticData);
-            
+
         await WriteLogEntryAsync(entry);
         _logger.LogWarning("[INSTABILITY] {Component}: {Issue}", component, issue);
     }
@@ -93,10 +93,10 @@ public class DebugLogService : IDebugLogService
             SessionId = _sessionId,
             ExceptionDetails = exception?.ToString()
         };
-        
+
         if (context != null)
             entry.SetData(context);
-            
+
         await WriteLogEntryAsync(entry);
         _logger.LogCritical(exception, "[STRUCTURAL_FAILURE] {Component}: {Failure}", component, failure);
     }
@@ -105,9 +105,9 @@ public class DebugLogService : IDebugLogService
     {
         var endTime = DateTime.UtcNow;
         var startTime = endTime.AddHours(-1); // Last hour by default
-        
+
         var logs = await GetLogsInTimeRangeAsync(startTime, endTime);
-        
+
         var report = new DebugSummaryReport
         {
             GeneratedAt = endTime,
@@ -121,25 +121,25 @@ public class DebugLogService : IDebugLogService
         // Save report to file
         var reportFileName = $"summary_report_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{_sessionId}.json";
         var reportPath = Path.Combine(_reportsPath, reportFileName);
-        
-        await File.WriteAllTextAsync(reportPath, JsonSerializer.Serialize(report, new JsonSerializerOptions 
-        { 
-            WriteIndented = true 
+
+        await File.WriteAllTextAsync(reportPath, JsonSerializer.Serialize(report, new JsonSerializerOptions
+        {
+            WriteIndented = true
         }));
-        
+
         _logger.LogInformation("Generated debug summary report: {ReportPath}", reportPath);
-        
+
         return report;
     }
 
     public async Task<IEnumerable<DebugLogEntry>> GetRecentLogsAsync(int count = 100, string? eventType = null)
     {
         var allLogs = new List<DebugLogEntry>();
-        
+
         var logFiles = Directory.GetFiles(_debugLogPath, "debug_*.json")
             .OrderByDescending(f => File.GetCreationTime(f))
             .Take(10); // Only check recent files
-        
+
         foreach (var file in logFiles)
         {
             try
@@ -153,22 +153,22 @@ public class DebugLogService : IDebugLogService
                 _logger.LogError(ex, "Error reading debug log file: {File}", file);
             }
         }
-        
+
         var query = allLogs.OrderByDescending(l => l.Timestamp).AsEnumerable();
-        
+
         if (!string.IsNullOrEmpty(eventType))
             query = query.Where(l => l.EventType.Equals(eventType, StringComparison.OrdinalIgnoreCase));
-            
+
         return query.Take(count);
     }
 
-    public async Task CleanupOldLogsAsync(TimeSpan retentionPeriod)
+    public Task CleanupOldLogsAsync(TimeSpan retentionPeriod)
     {
         var cutoffTime = DateTime.UtcNow - retentionPeriod;
-        
+
         var logFiles = Directory.GetFiles(_debugLogPath, "debug_*.json");
         var reportFiles = Directory.GetFiles(_reportsPath, "summary_report_*.json");
-        
+
         foreach (var file in logFiles.Concat(reportFiles))
         {
             if (File.GetCreationTime(file) < cutoffTime)
@@ -184,6 +184,8 @@ public class DebugLogService : IDebugLogService
                 }
             }
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task WriteLogEntryAsync(DebugLogEntry entry)
@@ -193,9 +195,9 @@ public class DebugLogService : IDebugLogService
         {
             var fileName = $"debug_{DateTime.UtcNow:yyyyMMdd}_{_sessionId}.json";
             var filePath = Path.Combine(_debugLogPath, fileName);
-            
+
             List<DebugLogEntry> entries;
-            
+
             if (File.Exists(filePath))
             {
                 var content = await File.ReadAllTextAsync(filePath);
@@ -205,20 +207,20 @@ public class DebugLogService : IDebugLogService
             {
                 entries = new List<DebugLogEntry>();
             }
-            
+
             entries.Add(entry);
-            
+
             // Keep only recent entries in each file (max 1000)
             if (entries.Count > 1000)
             {
                 entries = entries.OrderByDescending(e => e.Timestamp).Take(1000).ToList();
             }
-            
-            var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions 
-            { 
-                WriteIndented = true 
+
+            var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions
+            {
+                WriteIndented = true
             });
-            
+
             await File.WriteAllTextAsync(filePath, json);
         }
         finally
@@ -230,9 +232,9 @@ public class DebugLogService : IDebugLogService
     private async Task<List<DebugLogEntry>> GetLogsInTimeRangeAsync(DateTime startTime, DateTime endTime)
     {
         var allLogs = new List<DebugLogEntry>();
-        
+
         var logFiles = Directory.GetFiles(_debugLogPath, "debug_*.json");
-        
+
         foreach (var file in logFiles)
         {
             try
@@ -246,7 +248,7 @@ public class DebugLogService : IDebugLogService
                 _logger.LogError(ex, "Error reading debug log file: {File}", file);
             }
         }
-        
+
         return allLogs.OrderBy(l => l.Timestamp).ToList();
     }
 
@@ -268,11 +270,11 @@ public class DebugLogService : IDebugLogService
             .ToList();
     }
 
-    private async Task<AppStateSnapshot> CaptureAppStateSnapshotAsync()
+    private Task<AppStateSnapshot> CaptureAppStateSnapshotAsync()
     {
         var process = Process.GetCurrentProcess();
-        
-        return new AppStateSnapshot
+
+        return Task.FromResult(new AppStateSnapshot
         {
             Version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown",
             IsHealthy = true, // You can implement health checks here
@@ -288,43 +290,43 @@ public class DebugLogService : IDebugLogService
                 ThreadCount = process.Threads.Count,
                 HandleCount = process.HandleCount
             }
-        };
+        });
     }
 
-    private async Task<List<PerformanceMetric>> CollectPerformanceMetricsAsync()
+    private Task<List<PerformanceMetric>> CollectPerformanceMetricsAsync()
     {
         var process = Process.GetCurrentProcess();
-        
-        return new List<PerformanceMetric>
+
+        return Task.FromResult(new List<PerformanceMetric>
         {
-            new() 
-            { 
-                Name = "Memory Usage", 
-                Category = "System", 
-                Value = process.WorkingSet64 / 1024.0 / 1024.0, 
-                Unit = "MB" 
+            new()
+            {
+                Name = "Memory Usage",
+                Category = "System",
+                Value = process.WorkingSet64 / 1024.0 / 1024.0,
+                Unit = "MB"
             },
-            new() 
-            { 
-                Name = "Thread Count", 
-                Category = "System", 
-                Value = process.Threads.Count, 
-                Unit = "count" 
+            new()
+            {
+                Name = "Thread Count",
+                Category = "System",
+                Value = process.Threads.Count,
+                Unit = "count"
             },
-            new() 
-            { 
-                Name = "Handle Count", 
-                Category = "System", 
-                Value = process.HandleCount, 
-                Unit = "count" 
+            new()
+            {
+                Name = "Handle Count",
+                Category = "System",
+                Value = process.HandleCount,
+                Unit = "count"
             },
-            new() 
-            { 
-                Name = "CPU Time", 
-                Category = "System", 
-                Value = process.TotalProcessorTime.TotalMilliseconds, 
-                Unit = "ms" 
+            new()
+            {
+                Name = "CPU Time",
+                Category = "System",
+                Value = process.TotalProcessorTime.TotalMilliseconds,
+                Unit = "ms"
             }
-        };
+        });
     }
 }

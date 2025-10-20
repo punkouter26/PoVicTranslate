@@ -93,12 +93,17 @@ app.UseAuthorization();
 app.MapControllers(); // Handle API routes first
 app.MapRazorPages();
 
-// Enable Swagger in development
-if (app.Environment.IsDevelopment())
+// Enable Swagger in all environments per requirements
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "PoVicTranslate API v1");
+    if (!app.Environment.IsDevelopment())
+    {
+        // In production, Swagger is available but not as the default page
+        c.RoutePrefix = "swagger";
+    }
+});
 
 // Add custom fallback route that only serves index.html for non-API requests
 app.Use(async (context, next) =>

@@ -77,8 +77,8 @@
 
     private void TriggerNullReference()
     {
-        string nullString = null;
-        var length = nullString.Length; // This will throw NullReferenceException
+        string? nullString = null;
+        var length = nullString!.Length; // This will throw NullReferenceException
     }
 
     private async Task CheckErrorUIStatus()

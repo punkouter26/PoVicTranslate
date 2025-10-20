@@ -1,0 +1,12 @@
+graph TB
+    Client[VictorianTranslator.Client<br/>Blazor WASM]
+    Server[VictorianTranslator.Server<br/>ASP.NET Core API]
+    Azure[Azure Services<br/>OpenAI + Speech]
+
+    Client -->|HTTP| Server
+    Server -->|API Calls| Azure
+    Server -.->|Hosts| Client
+
+    style Client fill:#4a90e2
+    style Server fill:#50c878
+    style Azure fill:#ffd700

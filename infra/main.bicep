@@ -9,25 +9,16 @@ param environmentName string
 @description('Primary location for all resources')
 param location string = resourceGroup().location
 
-// Generate a unique token for resource names
-var resourceToken = uniqueString(subscription().id, resourceGroup().id, location, environmentName)
-var resourcePrefix = 'vts' // Victorian Translator Service
-
 // Reference to the existing shared App Service Plan in PoShared resource group
+// Using the F1 Free tier plan
 resource existingAppServicePlan 'Microsoft.Web/serverfarms@2023-12-01' existing = {
-  name: 'PoSharedAppServicePlan'
+  name: 'PoShared'
   scope: resourceGroup('PoShared')
 }
 
-// Reference to the existing shared Application Insights in PoShared resource group
-resource existingApplicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: 'PoSharedApplicationInsights'
-  scope: resourceGroup('PoShared')
-}
-
-// Create a dedicated Log Analytics Workspace for this application
+// Create Log Analytics Workspace for Application Insights
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: '${resourcePrefix}-logs-${resourceToken}'
+  name: 'PoVicTranslate'
   location: location
   properties: {
     sku: {
@@ -40,10 +31,16 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09
   }
 }
 
-// User-assigned managed identity for the app service
-resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-  name: 'az-${resourcePrefix}-${resourceToken}'
+// Create Application Insights
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'PoVicTranslate'
   location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalyticsWorkspace.id
+    RetentionInDays: 30
+  }
   tags: {
     'azd-env-name': environmentName
   }
@@ -51,53 +48,45 @@ resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
 
 // App Service
 resource appService 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'PoVicTranslate' // Following the naming convention Po<SolutionName>
+  name: 'PoVicTranslate'
   location: location
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${userAssignedIdentity.id}': {}
-    }
-  }
+  kind: 'app'
   properties: {
     serverFarmId: existingAppServicePlan.id
     httpsOnly: true
     siteConfig: {
       netFrameworkVersion: 'v9.0'
-      cors: {
-        allowedOrigins: ['*']
-        supportCredentials: false
-      }
+      use32BitWorkerProcess: true  // Required for F1 tier
+      alwaysOn: false  // Not supported in F1 tier
       appSettings: [
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: existingApplicationInsights.properties.ConnectionString
-        }
-        {
-          name: 'AZURE_CLIENT_ID'
-          value: userAssignedIdentity.properties.clientId
+          value: applicationInsights.properties.ConnectionString
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
           value: '1'
         }
-        // Azure OpenAI configuration
+        // These values will be overridden by GitHub Actions or manually configured
         {
-          name: 'AZURE_OPENAI_ENDPOINT'
-          value: 'https://posharedopenaieastus.openai.azure.com/'
+          name: 'ApiSettings__AzureOpenAIApiKey'
+          value: ''
         }
         {
-          name: 'AZURE_OPENAI_API_KEY'
-          value: '3034cc85dd024ca29155d4534911df9f'
-        }
-        // Speech service configuration
-        {
-          name: 'SPEECH_REGION'
-          value: 'eastus2'
+          name: 'ApiSettings__AzureOpenAIEndpoint'
+          value: ''
         }
         {
-          name: 'AZURE_SPEECH_API_KEY'
-          value: '02d9dcbe18fe4725aa1a67f5fe393062'
+          name: 'ApiSettings__AzureOpenAIDeploymentName'
+          value: ''
+        }
+        {
+          name: 'ApiSettings__AzureSpeechSubscriptionKey'
+          value: ''
+        }
+        {
+          name: 'ApiSettings__AzureSpeechRegion'
+          value: ''
         }
       ]
     }
@@ -137,16 +126,9 @@ resource appServiceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01
   }
 }
 
-// Site extension for Application Insights
-resource siteExtension 'Microsoft.Web/sites/siteextensions@2023-12-01' = {
-  parent: appService
-  name: 'Microsoft.ApplicationInsights.AzureWebSites'
-}
-
 // Outputs required by azd
 output RESOURCE_GROUP_ID string = resourceGroup().id
 output AZURE_LOCATION string = location
-output APPLICATIONINSIGHTS_CONNECTION_STRING string = existingApplicationInsights.properties.ConnectionString
-output SERVICE_VICTORIANUPDATER_SERVER_IDENTITY_PRINCIPAL_ID string = userAssignedIdentity.properties.principalId
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = applicationInsights.properties.ConnectionString
 output SERVICE_VICTORIANUPDATER_SERVER_NAME string = appService.name
 output SERVICE_VICTORIANUPDATER_SERVER_URI string = 'https://${appService.properties.defaultHostName}'

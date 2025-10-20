@@ -22,7 +22,7 @@ public class DebugController : ControllerBase
     /// </summary>
     [HttpGet("logs")]
     public async Task<ActionResult<IEnumerable<DebugLogEntry>>> GetRecentLogs(
-        [FromQuery] int count = 100, 
+        [FromQuery] int count = 100,
         [FromQuery] string? eventType = null)
     {
         try
@@ -64,7 +64,7 @@ public class DebugController : ControllerBase
         try
         {
             await _debugLogService.LogEventAsync(
-                request.EventType ?? "Test", 
+                request.EventType ?? "Test",
                 request.Message ?? "Test event logged via API",
                 request.Data
             );
@@ -205,7 +205,7 @@ public class DebugController : ControllerBase
     /// Get debug system health status
     /// </summary>
     [HttpGet("health")]
-    public async Task<ActionResult> GetDebugHealth()
+    public Task<ActionResult> GetDebugHealth()
     {
         try
         {
@@ -233,12 +233,12 @@ public class DebugController : ControllerBase
                 }
             };
 
-            return Ok(health);
+            return Task.FromResult<ActionResult>(Ok(health));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error checking debug health");
-            return StatusCode(500, "Error checking debug health");
+            return Task.FromResult<ActionResult>(StatusCode(500, "Error checking debug health"));
         }
     }
 }

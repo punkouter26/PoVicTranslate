@@ -11,12 +11,12 @@ public interface IConfigurationValidator
     /// Validates Azure OpenAI configuration settings
     /// </summary>
     DiagnosticResult ValidateAzureOpenAI();
-    
+
     /// <summary>
     /// Validates Azure Speech Service configuration and connectivity
     /// </summary>
     Task<DiagnosticResult> ValidateAzureSpeechAsync();
-    
+
     /// <summary>
     /// Validates basic internet connectivity
     /// </summary>

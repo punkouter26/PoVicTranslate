@@ -120,7 +120,7 @@ public class LyricsManagementController : ControllerBase
         try
         {
             var collection = await _lyricsManagement.LoadLyricsCollectionAsync();
-            
+
             var stats = new
             {
                 TotalSongs = collection.TotalSongs,

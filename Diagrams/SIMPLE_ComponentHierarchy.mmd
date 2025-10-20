@@ -1,0 +1,16 @@
+graph TB
+    App[App.razor]
+    Layout[MainLayout.razor]
+    Pages[Pages]
+
+    App --> Layout
+    Layout --> Pages
+    
+    Pages --> Translation[Translation.razor<br/>Main UI]
+    Pages --> Diag[Diag.razor<br/>Health Checks]
+    Pages --> Error[Error.razor]
+
+    style App fill:#4a90e2
+    style Layout fill:#50c878
+    style Translation fill:#ffd700
+    style Diag fill:#ff6b6b

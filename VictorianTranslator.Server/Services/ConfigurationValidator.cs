@@ -27,11 +27,11 @@ public class ConfigurationValidator : IConfigurationValidator
 
         try
         {
-            bool keyOk = !string.IsNullOrWhiteSpace(_apiSettings.AzureOpenAIApiKey) && 
+            bool keyOk = !string.IsNullOrWhiteSpace(_apiSettings.AzureOpenAIApiKey) &&
                         _apiSettings.AzureOpenAIApiKey != "YOUR_AZURE_OPENAI_API_KEY";
-            bool endpointOk = !string.IsNullOrWhiteSpace(_apiSettings.AzureOpenAIEndpoint) && 
+            bool endpointOk = !string.IsNullOrWhiteSpace(_apiSettings.AzureOpenAIEndpoint) &&
                              _apiSettings.AzureOpenAIEndpoint != "YOUR_AZURE_OPENAI_ENDPOINT";
-            bool deploymentOk = !string.IsNullOrWhiteSpace(_apiSettings.AzureOpenAIDeploymentName) && 
+            bool deploymentOk = !string.IsNullOrWhiteSpace(_apiSettings.AzureOpenAIDeploymentName) &&
                                _apiSettings.AzureOpenAIDeploymentName != "YOUR_AZURE_OPENAI_DEPLOYMENT_NAME";
 
             if (keyOk && endpointOk && deploymentOk)
@@ -58,7 +58,7 @@ public class ConfigurationValidator : IConfigurationValidator
             result.Error = ex;
             _logger.LogError(ex, result.Message);
         }
-        
+
         return result;
     }
 
@@ -126,7 +126,7 @@ public class ConfigurationValidator : IConfigurationValidator
     {
         var result = new DiagnosticResult { CheckName = "Internet Connectivity" };
         _logger.LogInformation("Validating internet connectivity...");
-        
+
         try
         {
             using var ping = new System.Net.NetworkInformation.Ping();
@@ -159,7 +159,7 @@ public class ConfigurationValidator : IConfigurationValidator
             result.Error = ex;
             _logger.LogError(ex, "Internet connectivity validation failed with unexpected exception.");
         }
-        
+
         return result;
     }
 }

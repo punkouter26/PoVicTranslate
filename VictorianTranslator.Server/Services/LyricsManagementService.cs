@@ -48,7 +48,7 @@ public class LyricsManagementService : ILyricsManagementService
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
-            _cachedCollection = JsonSerializer.Deserialize<LyricsCollection>(jsonContent, options) 
+            _cachedCollection = JsonSerializer.Deserialize<LyricsCollection>(jsonContent, options)
                 ?? throw new InvalidOperationException("Failed to deserialize lyrics collection");
 
             _logger.LogInformation("Loaded lyrics collection with {SongCount} songs", _cachedCollection.TotalSongs);
@@ -63,7 +63,7 @@ public class LyricsManagementService : ILyricsManagementService
     public async Task<List<LyricsSong>> SearchLyricsAsync(string query, int maxResults = 10)
     {
         var collection = await LoadLyricsCollectionAsync();
-        
+
         if (string.IsNullOrWhiteSpace(query))
             return collection.Songs.Take(maxResults).ToList();
 
@@ -168,7 +168,7 @@ public class LyricsManagementService : ILyricsManagementService
     {
         var fileName = Path.GetFileNameWithoutExtension(filePath);
         var content = await File.ReadAllTextAsync(filePath);
-        
+
         // Clean up content
         content = content.Trim();
         var wordCount = CountWords(content);
@@ -240,13 +240,13 @@ public class LyricsManagementService : ILyricsManagementService
     {
         // Convert filename to proper title case
         var title = fileName.Replace("_", " ").Replace("-", " ");
-        
+
         // Handle common Wu-Tang abbreviations
         title = Regex.Replace(title, @"\bwu\b", "Wu", RegexOptions.IgnoreCase);
         title = Regex.Replace(title, @"\btang\b", "Tang", RegexOptions.IgnoreCase);
         title = Regex.Replace(title, @"\bda\b", "Da", RegexOptions.IgnoreCase);
         title = Regex.Replace(title, @"\bthe\b", "The", RegexOptions.IgnoreCase);
-        
+
         // Convert to title case
         return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(title.ToLowerInvariant());
     }
@@ -254,7 +254,7 @@ public class LyricsManagementService : ILyricsManagementService
     private static List<string> GenerateTags(string fileName, string content)
     {
         var tags = new List<string> { "hip-hop", "wu-tang" };
-        
+
         var fileNameLower = fileName.ToLowerInvariant();
         var contentLower = content.ToLowerInvariant();
 

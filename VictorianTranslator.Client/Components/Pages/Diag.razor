@@ -1,26 +1,84 @@
 @page "/diag"
-@inject NavigationManager NavigationManager
+@inject HttpClient Http
 @inject ILogger<Diag> Logger
 
-<PageTitle>System Diagnostics</PageTitle>
+<PageTitle>System Diagnostics - PoVicTranslate</PageTitle>
 
 <div class="diagnostics-page-container">
     <div class="diagnostics-page-content">
         <h4><i class="fas fa-stethoscope"></i> System Diagnostics</h4>
         <hr />
 
-        @if (_messages.Any())
+        @if (_loading)
         {
-            <ul class="list-group">
-                @foreach (var message in _messages)
-                {
-                    <li class="list-group-item list-group-item-dark">@message</li>
-                }
-            </ul>
+            <div class="text-center">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Running health checks...</p>
+            </div>
         }
-        else
+        else if (_healthStatus != null)
         {
-             <p class="text-warning">No diagnostic messages available.</p>
+            <div class="alert @(_healthStatus.Status == "Healthy" ? "alert-success" : "alert-danger")">
+                <h5>Overall Status: @_healthStatus.Status</h5>
+                <p class="mb-0">Last checked: @_healthStatus.Timestamp.ToLocalTime().ToString("g")</p>
+            </div>
+
+            <h5 class="mt-4">External Dependencies</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var check in _healthStatus.Checks)
+                        {
+                            <tr>
+                                <td>@check.Name</td>
+                                <td>
+                                    @if (check.Status == "Healthy")
+                                    {
+                                        <span class="badge bg-success">✓ @check.Status</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">✗ @check.Status</span>
+                                    }
+                                </td>
+                                <td class="details-column">
+                                    @check.Description
+                                    @if (!string.IsNullOrEmpty(check.Error))
+                                    {
+                                        <br />
+                                        <small class="text-danger">Error: @check.Error</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-center mt-4">
+                <button class="btn btn-warning" @onclick="RefreshHealth">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        }
+        else if (_error != null)
+        {
+            <div class="alert alert-danger">
+                <h5>Error Loading Health Status</h5>
+                <p>@_error</p>
+                <button class="btn btn-warning mt-2" @onclick="RefreshHealth">
+                    <i class="fas fa-sync-alt"></i> Try Again
+                </button>
+            </div>
         }
     </div>
 </div>
@@ -72,37 +130,55 @@
     }
 </style>
 
-@inject HttpClient Http
-@inject IConfiguration Configuration
-
 @code {
-    private List<string> _messages = new();
-    private string _apiBaseUrl = string.Empty;
-    private bool _apiConnectionStatus;
+    private HealthStatus? _healthStatus;
+    private bool _loading = true;
+    private string? _error;
+
+    public class HealthStatus
+    {
+        public string Status { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public List<HealthCheck> Checks { get; set; } = new();
+    }
+
+    public class HealthCheck
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string? Error { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        Logger.LogInformation("Diag page initialized.");
-
-        _apiBaseUrl = Configuration["ApiBaseUrl"] ?? "ApiBaseUrl not found in configuration.";
-        _messages.Add($"API Base URL: {_apiBaseUrl}");
-
-        await CheckApiConnection();
+        await LoadHealthStatus();
     }
 
-    private async Task CheckApiConnection()
+    private async Task LoadHealthStatus()
     {
+        _loading = true;
+        _error = null;
+
         try
         {
-            var response = await Http.GetAsync($"{_apiBaseUrl}/Lyrics/available");
-            _apiConnectionStatus = response.IsSuccessStatusCode;
-            _messages.Add($"API Connection Status ({_apiBaseUrl}/Lyrics/available): {_apiConnectionStatus}");
+            Logger.LogInformation("Fetching health status from /health endpoint");
+            _healthStatus = await Http.GetFromJsonAsync<HealthStatus>("/health");
+            Logger.LogInformation("Health status loaded successfully");
         }
         catch (Exception ex)
         {
-            _apiConnectionStatus = false;
-            _messages.Add($"API Connection Error: {ex.Message}");
-            Logger.LogError(ex, "Error checking API connection.");
+            Logger.LogError(ex, "Failed to load health status");
+            _error = $"Failed to connect to health endpoint: {ex.Message}";
         }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task RefreshHealth()
+    {
+        await LoadHealthStatus();
     }
 }

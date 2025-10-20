@@ -68,7 +68,7 @@ public class TranslationViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrWhiteSpace(InputText))
             return 0;
-        
+
         return InputText.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
     }
 
@@ -96,7 +96,7 @@ public class TranslationViewModel : INotifyPropertyChanged
 
         backingStore = value;
         OnPropertyChanged(propertyName);
-        
+
         // Notify dependent properties
         if (propertyName == nameof(InputText))
         {
@@ -111,7 +111,7 @@ public class TranslationViewModel : INotifyPropertyChanged
         {
             OnPropertyChanged(nameof(CanSpeak));
         }
-        
+
         return true;
     }
 }

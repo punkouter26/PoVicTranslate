@@ -42,10 +42,10 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         {
             viewModel.IsLoading = true;
             viewModel.ClearError();
-            
+
             var songs = await _lyricsService.GetAvailableSongsAsync();
             viewModel.AvailableSongs = songs;
-            
+
             return true;
         }
         catch (Exception)
@@ -65,10 +65,10 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         {
             viewModel.IsLoading = true;
             viewModel.ClearError();
-            
+
             var lyrics = await _lyricsService.GetLyricsAsync(songFileName);
             viewModel.InputText = lyrics;
-            
+
             return true;
         }
         catch (Exception)
@@ -84,7 +84,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
 
     public async Task<bool> LoadRandomSongAsync(TranslationViewModel viewModel)
     {
-        if (!viewModel.AvailableSongs.Any()) 
+        if (!viewModel.AvailableSongs.Any())
             return false;
 
         var random = new Random();
@@ -97,7 +97,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         try
         {
             viewModel.ClearError();
-            
+
             if (string.IsNullOrWhiteSpace(viewModel.InputText))
             {
                 viewModel.ErrorMessage = "Please enter some text to translate.";
@@ -113,7 +113,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
             viewModel.IsTranslating = true;
             var translatedText = await _translationService.TranslateText(viewModel.InputText);
             viewModel.TranslatedText = translatedText ?? string.Empty;
-            
+
             return true;
         }
         catch (Exception)
@@ -133,7 +133,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         try
         {
             viewModel.ClearError();
-            
+
             if (string.IsNullOrWhiteSpace(viewModel.TranslatedText))
             {
                 viewModel.ErrorMessage = "No translated text to read.";
@@ -143,7 +143,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
             viewModel.IsSpeaking = true;
             var audioBytes = await _speechService.SynthesizeSpeechAsync(viewModel.TranslatedText);
             await _jsRuntime.InvokeVoidAsync("playAudio", audioBytes);
-            
+
             return true;
         }
         catch (Exception)

@@ -1,0 +1,26 @@
+flowchart TD
+    Start([User Opens App]) --> Enter[Enter Text]
+    Enter --> Validate{Valid?}
+    
+    Validate -->|No| Error[Show Error]
+    Error --> Enter
+    
+    Validate -->|Yes| Translate[Translate to Victorian]
+    Translate --> Success{Success?}
+    
+    Success -->|Yes| Display[Display Result]
+    Display --> Actions{User Action?}
+    Actions -->|Speak| Audio[Play Audio]
+    Actions -->|Copy| Copy[Copy Text]
+    Actions -->|New| Enter
+    Actions -->|Done| End([Exit])
+    
+    Success -->|No| ErrorMsg[Show Error]
+    ErrorMsg --> End
+    
+    Audio --> Actions
+    Copy --> Actions
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C1
+    style Translate fill:#FFD700

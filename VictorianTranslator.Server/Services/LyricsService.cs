@@ -43,7 +43,7 @@ namespace VictorianTranslator.Services
 
                 var jsonContent = await File.ReadAllTextAsync(_lyricsFilePath);
                 _lyricsCache = JsonSerializer.Deserialize<LyricsCollection>(jsonContent);
-                
+
                 if (_lyricsCache == null)
                 {
                     throw new InvalidOperationException("Failed to deserialize lyrics collection");
@@ -70,10 +70,10 @@ namespace VictorianTranslator.Services
         {
             // Remove .json or .txt extension if present to get the song ID
             var songId = Path.GetFileNameWithoutExtension(songFileName);
-            
+
             var collection = await GetLyricsCollectionAsync();
             var song = collection.Songs.FirstOrDefault(s => s.Id.Equals(songId, StringComparison.OrdinalIgnoreCase));
-            
+
             if (song == null)
             {
                 throw new FileNotFoundException($"Song not found: {songId}");

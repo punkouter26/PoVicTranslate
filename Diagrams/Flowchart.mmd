@@ -1,0 +1,54 @@
+flowchart TD
+    Start([User Opens Application]) --> LoadPage[Load Translation Page]
+    LoadPage --> CheckLyrics{Use Lyrics<br/>Library?}
+    
+    CheckLyrics -->|Yes| SelectLyrics[Select from Dropdown<br/>or Random]
+    CheckLyrics -->|No| EnterText[Enter Custom Text]
+    
+    SelectLyrics --> LoadLyrics[Load Lyrics Content]
+    LoadLyrics --> PopulateInput[Populate Input Field]
+    PopulateInput --> ValidateInput
+    
+    EnterText --> ValidateInput{Word Count<br/>≤ 200?}
+    
+    ValidateInput -->|No| ShowError[Show Validation Error]
+    ShowError --> EnterText
+    
+    ValidateInput -->|Yes| ClickTranslate[Click 'Make It Victorian']
+    ClickTranslate --> ShowLoading[Display Loading State]
+    
+    ShowLoading --> CallAPI[POST /Translation/translate]
+    CallAPI --> ProcessAI[Azure OpenAI Processing]
+    
+    ProcessAI --> CheckSuccess{API Success?}
+    
+    CheckSuccess -->|Yes| LogSuccess[Log Telemetry Success]
+    LogSuccess --> DisplayResult[Display Victorian Translation]
+    
+    DisplayResult --> UserChoice{User Action?}
+    
+    UserChoice -->|Speak| CallSpeech[POST /Speech/synthesize]
+    CallSpeech --> PlayAudio[Play Audio via Browser]
+    PlayAudio --> UserChoice
+    
+    UserChoice -->|Copy| CopyClipboard[Copy to Clipboard]
+    CopyClipboard --> ShowCopySuccess[Show Success Message]
+    ShowCopySuccess --> UserChoice
+    
+    UserChoice -->|New Translation| EnterText
+    UserChoice -->|Done| End([User Leaves])
+    
+    CheckSuccess -->|No| LogError[Log Exception Telemetry]
+    LogError --> DisplayError[Show Error Message]
+    DisplayError --> Retry{Retry?}
+    
+    Retry -->|Yes| ClickTranslate
+    Retry -->|No| End
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C1
+    style ProcessAI fill:#FFD700
+    style ShowError fill:#FF6B6B
+    style DisplayError fill:#FF6B6B
+    style LogSuccess fill:#4A90E2
+    style LogError fill:#FF6B6B

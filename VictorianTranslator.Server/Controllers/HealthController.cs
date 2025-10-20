@@ -31,12 +31,12 @@ public class HealthController : ControllerBase
         try
         {
             _logger.LogInformation("Health check requested");
-            
+
             var diagnosticResults = await _diagnosticService.RunChecksAsync();
-            
+
             var overallHealthy = diagnosticResults.All(r => r.Success);
             var status = overallHealthy ? "Healthy" : "Unhealthy";
-            
+
             var response = new
             {
                 Status = status,
@@ -51,13 +51,13 @@ public class HealthController : ControllerBase
             };
 
             _logger.LogInformation("Health check completed with status: {Status}", status);
-            
+
             return overallHealthy ? Ok(response) : StatusCode(503, response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Health check failed with exception");
-            
+
             var errorResponse = new
             {
                 Status = "Unhealthy",
@@ -65,7 +65,7 @@ public class HealthController : ControllerBase
                 Error = "Health check failed",
                 Message = ex.Message
             };
-            
+
             return StatusCode(503, errorResponse);
         }
     }
@@ -94,10 +94,10 @@ public class HealthController : ControllerBase
             // Run a subset of critical checks for readiness
             var diagnosticResults = await _diagnosticService.RunChecksAsync();
             var criticalChecks = diagnosticResults.Where(r => r.CheckName.Contains("Configuration") || r.CheckName.Contains("Connection"));
-            
+
             var ready = criticalChecks.All(r => r.Success);
             var status = ready ? "Ready" : "NotReady";
-            
+
             var response = new
             {
                 Status = status,
@@ -109,7 +109,7 @@ public class HealthController : ControllerBase
                     Description = r.Message
                 })
             };
-            
+
             return ready ? Ok(response) : StatusCode(503, response);
         }
         catch (Exception ex)
