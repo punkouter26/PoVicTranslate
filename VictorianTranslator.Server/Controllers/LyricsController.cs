@@ -36,16 +36,30 @@ namespace VictorianTranslator.Server.Controllers
             var song = await _lyricsManagement.GetSongByIdAsync(songFileName);
             if (song != null)
             {
-                return Ok(song.Content);
+                // Limit to 200 words
+                var limitedContent = LimitWords(song.Content, 200);
+                return Ok(limitedContent);
             }
 
-            // Fallback to original service for backward compatibility
+            // Fallback to original service for backward compatibility (already limits to 200 words)
             var lyrics = await _lyricsService.GetLyricsAsync(songFileName);
             if (lyrics == null)
             {
                 return NotFound();
             }
             return Ok(lyrics);
+        }
+
+        private static string LimitWords(string text, int maxWords)
+        {
+            var words = text.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            if (words.Length <= maxWords)
+            {
+                return text;
+            }
+
+            return string.Join(" ", words.Take(maxWords)) + "...";
         }
     }
 }
