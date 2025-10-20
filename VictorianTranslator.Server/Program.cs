@@ -132,3 +132,6 @@ app.Use(async (context, next) =>
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// Make Program accessible to integration tests
+public partial class Program { }

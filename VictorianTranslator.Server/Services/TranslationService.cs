@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using System.Diagnostics;
+using System.ClientModel;
 
 namespace VictorianTranslator.Services;
 
@@ -121,6 +122,29 @@ Your task is to translate the user's text while adhering strictly to the followi
             return content ?? "The translation yielded naught but silence.";
 
         }
+        catch (ClientResultException ex) when (ex.Status == 429)
+        {
+            stopwatch.Stop();
+
+            // Track failed translation due to rate limiting
+            telemetry.Properties["Success"] = "false";
+            telemetry.Properties["ErrorType"] = "RateLimitExceeded";
+            telemetry.Properties["ErrorMessage"] = ex.Message;
+            telemetry.Properties["DurationMs"] = stopwatch.ElapsedMilliseconds.ToString();
+            _telemetryClient.TrackEvent(telemetry);
+
+            _telemetryClient.TrackException(ex, new Dictionary<string, string>
+            {
+                { "Operation", "TranslateToVictorianEnglish" },
+                { "ErrorType", "RateLimitExceeded" },
+                { "InputText", modernText.Length > 100 ? modernText.Substring(0, 100) + "..." : modernText }
+            });
+
+            _logger.LogWarning(ex, "Azure OpenAI rate limit exceeded. Status: {Status}", ex.Status);
+
+            // Return a Victorian-style error message instead of throwing
+            return "Alas, our translation apparatus finds itself most overwhelmed at present. Pray, do make another attempt in a brief moment.";
+        }
         catch (Exception ex)
         {
             stopwatch.Stop();
@@ -138,7 +162,9 @@ Your task is to translate the user's text while adhering strictly to the followi
             });
 
             _logger.LogError(ex, "Azure OpenAI API request failed with message: {Message}", ex.Message);
-            throw new Exception($"Translation API error: Failed to communicate with Azure OpenAI. Please check logs for details.", ex);
+
+            // Return a Victorian-style error message instead of throwing
+            return "Regrettably, an unforeseen circumstance has prevented the translation from being completed at this time. Most sincere apologies for this inconvenience.";
         }
     }
 }
