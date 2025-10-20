@@ -59,7 +59,9 @@ packages/
 ## Misc
 *.cache
 *.bak
+*.zip
 Thumbs.db
+publish/
 
 # MAUI
 MauiClient/bin/
