@@ -10,9 +10,9 @@ param environmentName string
 param location string = resourceGroup().location
 
 // Reference to the existing shared App Service Plan in PoShared resource group
-// Using the F1 Free tier plan
+// Using PoShared2 plan (centralus location)
 resource existingAppServicePlan 'Microsoft.Web/serverfarms@2023-12-01' existing = {
-  name: 'PoShared'
+  name: 'PoShared2'
   scope: resourceGroup('PoShared')
 }
 
@@ -49,7 +49,7 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
 // App Service
 resource appService 'Microsoft.Web/sites@2023-12-01' = {
   name: 'PoVicTranslate'
-  location: location
+  location: 'centralus'  // Must match the PoShared2 plan location
   kind: 'app'
   properties: {
     serverFarmId: existingAppServicePlan.id
