@@ -27,3 +27,72 @@
 2025-10-20 22:17:49.969 -04:00 [INF] Executed endpoint 'VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server)'
 2025-10-20 22:17:49.979 -04:00 [INF] [EVENT] HttpRequestComplete: GET /health completed in 699ms
 2025-10-20 22:17:49.990 -04:00 [INF] Request finished HTTP/1.1 GET http://localhost:5000/health - 200 null application/json; charset=utf-8 725.6014ms
+2025-10-20 22:38:24.951 -04:00 [INF] User profile is available. Using 'C:\Users\punko\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2025-10-20 22:38:26.033 -04:00 [INF] Request starting HTTP/1.1 GET http://localhost/healthz - null null
+2025-10-20 22:38:26.058 -04:00 [INF] [INIT] DebugLogService: Debug logging service initialized
+2025-10-20 22:38:26.069 -04:00 [INF] [EVENT] HttpRequestStart: GET /healthz
+2025-10-20 22:38:26.070 -04:00 [WRN] Failed to determine the https port for redirect.
+2025-10-20 22:38:26.089 -04:00 [INF] Executing endpoint 'VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server)'
+2025-10-20 22:38:26.096 -04:00 [INF] Route matched with {action = "Health", controller = "Health"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Health() on controller VictorianTranslator.Server.Controllers.HealthController (VictorianTranslator.Server).
+2025-10-20 22:38:26.099 -04:00 [INF] Executing action method VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server) - Validation state: "Valid"
+2025-10-20 22:38:26.101 -04:00 [INF] Health check requested
+2025-10-20 22:38:26.101 -04:00 [INF] Running diagnostic checks...
+2025-10-20 22:38:26.101 -04:00 [INF] Validating Azure OpenAI configuration...
+2025-10-20 22:38:26.101 -04:00 [INF] Azure OpenAI configuration validation successful.
+2025-10-20 22:38:26.102 -04:00 [INF] Validating Azure Speech Service connection...
+2025-10-20 22:38:26.470 -04:00 [INF] Attempting to retrieve voices from Azure Speech region eastus2...
+2025-10-20 22:38:26.954 -04:00 [INF] Azure Speech validation successful.
+2025-10-20 22:38:26.958 -04:00 [INF] Validating internet connectivity...
+2025-10-20 22:38:26.984 -04:00 [INF] Internet connection appears to be available.
+2025-10-20 22:38:26.984 -04:00 [INF] Diagnostic checks completed.
+2025-10-20 22:38:26.985 -04:00 [INF] Health check completed with status: Healthy
+2025-10-20 22:38:26.993 -04:00 [INF] Executed action method VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server), returned result Microsoft.AspNetCore.Mvc.OkObjectResult in 886.0144ms.
+2025-10-20 22:38:27.011 -04:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType5`3[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Collections.Generic.IEnumerable`1[[<>f__AnonymousType6`4[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], VictorianTranslator.Server, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-10-20 22:38:27.020 -04:00 [INF] Executed action VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server) in 921.957ms
+2025-10-20 22:38:27.020 -04:00 [INF] Executed endpoint 'VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server)'
+2025-10-20 22:38:27.026 -04:00 [INF] [EVENT] HttpRequestComplete: GET /healthz completed in 984ms
+2025-10-20 22:38:27.030 -04:00 [INF] Request finished HTTP/1.1 GET http://localhost/healthz - 200 null application/json; charset=utf-8 998.706ms
+2025-10-20 22:38:27.046 -04:00 [INF] Request starting HTTP/1.1 GET http://localhost/health - null null
+2025-10-20 22:38:27.048 -04:00 [INF] [EVENT] HttpRequestStart: GET /health
+2025-10-20 22:38:27.049 -04:00 [INF] Executing endpoint 'VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server)'
+2025-10-20 22:38:27.051 -04:00 [INF] Route matched with {action = "Health", controller = "Health"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Health() on controller VictorianTranslator.Server.Controllers.HealthController (VictorianTranslator.Server).
+2025-10-20 22:38:27.052 -04:00 [INF] Executing action method VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server) - Validation state: "Valid"
+2025-10-20 22:38:27.052 -04:00 [INF] Health check requested
+2025-10-20 22:38:27.052 -04:00 [INF] Running diagnostic checks...
+2025-10-20 22:38:27.052 -04:00 [INF] Validating Azure OpenAI configuration...
+2025-10-20 22:38:27.052 -04:00 [INF] Azure OpenAI configuration validation successful.
+2025-10-20 22:38:27.052 -04:00 [INF] Validating Azure Speech Service connection...
+2025-10-20 22:38:27.052 -04:00 [INF] Attempting to retrieve voices from Azure Speech region eastus2...
+2025-10-20 22:38:27.552 -04:00 [INF] Azure Speech validation successful.
+2025-10-20 22:38:27.552 -04:00 [INF] Validating internet connectivity...
+2025-10-20 22:38:27.567 -04:00 [INF] Internet connection appears to be available.
+2025-10-20 22:38:27.568 -04:00 [INF] Diagnostic checks completed.
+2025-10-20 22:38:27.568 -04:00 [INF] Health check completed with status: Healthy
+2025-10-20 22:38:27.568 -04:00 [INF] Executed action method VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server), returned result Microsoft.AspNetCore.Mvc.OkObjectResult in 516.053ms.
+2025-10-20 22:38:27.568 -04:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType5`3[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Collections.Generic.IEnumerable`1[[<>f__AnonymousType6`4[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], VictorianTranslator.Server, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-10-20 22:38:27.568 -04:00 [INF] Executed action VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server) in 517.0246ms
+2025-10-20 22:38:27.568 -04:00 [INF] Executed endpoint 'VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server)'
+2025-10-20 22:38:27.570 -04:00 [INF] [EVENT] HttpRequestComplete: GET /health completed in 522ms
+2025-10-20 22:38:27.570 -04:00 [INF] Request finished HTTP/1.1 GET http://localhost/health - 200 null application/json; charset=utf-8 524.6445ms
+2025-10-20 22:38:27.592 -04:00 [INF] Request starting HTTP/1.1 GET http://localhost/health - null null
+2025-10-20 22:38:27.595 -04:00 [INF] [EVENT] HttpRequestStart: GET /health
+2025-10-20 22:38:27.595 -04:00 [INF] Executing endpoint 'VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server)'
+2025-10-20 22:38:27.595 -04:00 [INF] Route matched with {action = "Health", controller = "Health"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Health() on controller VictorianTranslator.Server.Controllers.HealthController (VictorianTranslator.Server).
+2025-10-20 22:38:27.596 -04:00 [INF] Executing action method VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server) - Validation state: "Valid"
+2025-10-20 22:38:27.596 -04:00 [INF] Health check requested
+2025-10-20 22:38:27.596 -04:00 [INF] Running diagnostic checks...
+2025-10-20 22:38:27.596 -04:00 [INF] Validating Azure OpenAI configuration...
+2025-10-20 22:38:27.596 -04:00 [INF] Azure OpenAI configuration validation successful.
+2025-10-20 22:38:27.596 -04:00 [INF] Validating Azure Speech Service connection...
+2025-10-20 22:38:27.596 -04:00 [INF] Attempting to retrieve voices from Azure Speech region eastus2...
+2025-10-20 22:38:27.977 -04:00 [INF] Azure Speech validation successful.
+2025-10-20 22:38:27.977 -04:00 [INF] Validating internet connectivity...
+2025-10-20 22:38:27.995 -04:00 [INF] Internet connection appears to be available.
+2025-10-20 22:38:27.995 -04:00 [INF] Diagnostic checks completed.
+2025-10-20 22:38:27.996 -04:00 [INF] Health check completed with status: Healthy
+2025-10-20 22:38:27.996 -04:00 [INF] Executed action method VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server), returned result Microsoft.AspNetCore.Mvc.OkObjectResult in 399.5243ms.
+2025-10-20 22:38:27.996 -04:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType5`3[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Collections.Generic.IEnumerable`1[[<>f__AnonymousType6`4[[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], VictorianTranslator.Server, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2025-10-20 22:38:27.996 -04:00 [INF] Executed action VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server) in 400.7824ms
+2025-10-20 22:38:27.997 -04:00 [INF] Executed endpoint 'VictorianTranslator.Server.Controllers.HealthController.Health (VictorianTranslator.Server)'
+2025-10-20 22:38:28.003 -04:00 [INF] [EVENT] HttpRequestComplete: GET /health completed in 405ms
+2025-10-20 22:38:28.003 -04:00 [INF] Request finished HTTP/1.1 GET http://localhost/health - 200 null application/json; charset=utf-8 411.8666ms
