@@ -16,7 +16,13 @@ namespace VictorianTranslator.Client.Services
         public async Task<byte[]> SynthesizeSpeechAsync(string text)
         {
             var response = await _httpClient.PostAsJsonAsync("Speech/synthesize", text);
-            response.EnsureSuccessStatusCode();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMessage = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Speech service returned status {response.StatusCode}: {errorMessage}");
+            }
+            
             return await response.Content.ReadAsByteArrayAsync();
         }
     }

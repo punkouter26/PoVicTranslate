@@ -146,9 +146,14 @@ public class TranslationOrchestrator : ITranslationOrchestrator
 
             return true;
         }
-        catch (Exception)
+        catch (HttpRequestException ex)
         {
-            viewModel.ErrorMessage = "Text-to-speech error: An unexpected error occurred.";
+            viewModel.ErrorMessage = $"Text-to-speech service unavailable: {ex.Message}";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            viewModel.ErrorMessage = $"Text-to-speech error: {ex.Message}";
             return false;
         }
         finally
