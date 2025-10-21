@@ -21,4 +21,10 @@
     <ProjectReference Include="..\VictorianTranslator.Client\VictorianTranslator.Client.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Data\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
