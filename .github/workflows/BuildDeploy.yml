@@ -25,10 +25,10 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
         
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore VictorianTranslator.Server/VictorianTranslator.Server.csproj
       
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build VictorianTranslator.Server/VictorianTranslator.Server.csproj --configuration Release --no-restore
       
     - name: Publish
       run: dotnet publish VictorianTranslator.Server/VictorianTranslator.Server.csproj --configuration Release --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
