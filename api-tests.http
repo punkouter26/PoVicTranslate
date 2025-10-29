@@ -1,0 +1,126 @@
+### PoVicTranslate API Test Suite
+### Use REST Client extension in VS Code to execute these requests
+### Ensure API is running on localhost:5000 or localhost:5001
+
+@baseUrl = https://localhost:5001
+@baseUrlHttp = http://localhost:5000
+
+### Health Check - Liveness
+GET {{baseUrl}}/api/health/live
+Accept: application/json
+
+###
+
+### Health Check - Readiness
+GET {{baseUrl}}/api/health/ready
+Accept: application/json
+
+###
+
+### Health Check - Full Status
+GET {{baseUrl}}/api/health
+Accept: application/json
+
+###
+
+### Translation - Simple Text
+POST {{baseUrl}}/translation/translate
+Content-Type: application/json
+
+{
+  "text": "Hello, how are you today?"
+}
+
+###
+
+### Translation - Long Text
+POST {{baseUrl}}/translation/translate
+Content-Type: application/json
+
+{
+  "text": "The quick brown fox jumps over the lazy dog. This is a longer sentence to test the translation service with more complex input."
+}
+
+###
+
+### Translation - Empty Text (Should Fail)
+POST {{baseUrl}}/translation/translate
+Content-Type: application/json
+
+{
+  "text": ""
+}
+
+###
+
+### Translation - Special Characters
+POST {{baseUrl}}/translation/translate
+Content-Type: application/json
+
+{
+  "text": "What's the weather like? It's raining cats and dogs!"
+}
+
+###
+
+### Lyrics - Get All Lyrics
+GET {{baseUrl}}/lyrics
+Accept: application/json
+
+###
+
+### Lyrics - Get by ID
+GET {{baseUrl}}/lyrics/{{lyricId}}
+Accept: application/json
+
+###
+
+### Lyrics - Create New
+POST {{baseUrl}}/lyrics
+Content-Type: application/json
+
+{
+  "title": "Test Song",
+  "artist": "Test Artist",
+  "originalLyrics": "Hello world, how are you?",
+  "translatedLyrics": "Good morrow, fair world, how dost thou fare?",
+  "audioUrl": ""
+}
+
+###
+
+### Lyrics - Update Existing
+PUT {{baseUrl}}/lyrics/{{lyricId}}
+Content-Type: application/json
+
+{
+  "id": "{{lyricId}}",
+  "title": "Updated Test Song",
+  "artist": "Updated Artist",
+  "originalLyrics": "Hello world, how are you?",
+  "translatedLyrics": "Good morrow, fair world, how dost thou fare?",
+  "audioUrl": "https://example.com/audio.mp3"
+}
+
+###
+
+### Lyrics - Delete
+DELETE {{baseUrl}}/lyrics/{{lyricId}}
+
+###
+
+### Audio Synthesis - Generate Speech
+POST {{baseUrl}}/audio/synthesize
+Content-Type: application/json
+
+{
+  "text": "Good morrow, fair world, how dost thou fare?"
+}
+
+###
+
+### Diagnostic - System Status
+GET {{baseUrl}}/api/diagnostic
+Accept: application/json
+
+###
