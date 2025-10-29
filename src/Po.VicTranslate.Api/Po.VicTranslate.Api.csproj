@@ -6,7 +6,15 @@
     <UserSecretsId>d2a50ce5-61a3-4079-95cf-94070b46143c</UserSecretsId>
     <EnableDefaultContentItems>false</EnableDefaultContentItems>
     <RootNamespace>Po.VicTranslate.Api</RootNamespace>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <AspNetCoreModuleName>AspNetCoreModuleV2</AspNetCoreModuleName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Update="web.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.10" />
