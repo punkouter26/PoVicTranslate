@@ -1,3 +1,0 @@
-<step title="Startup Request" date="2025-10-20T17:48:04.771" instance="79e06d" url="/api/deployments/latest?deployer=ZipDeploy&amp;time=2025-10-20_17-47-32Z" method="GET" type="request" pid="8156,2,8" ScmType="None" >
-  <step title="Cleanup Xml Logs" date="2025-10-20T17:48:04.771" /><!-- duration: 0ms -->
-</step><!-- duration: 16ms -->
