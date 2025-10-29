@@ -18,13 +18,13 @@ var existingPlanResourceGroup = 'PoShared'
 var appServiceName = 'PoVicTranslate'
 
 // Storage account (cloud-only, not used locally)
-var storageAccountName = toLower(replace('storage', '-', ''))
+var storageAccountName = toLower(replace('${environmentName}storage', '-', ''))
 
 // Log Analytics
-var logAnalyticsName = '-logs'
+var logAnalyticsName = '${environmentName}-logs'
 
 // Application Insights
-var appInsightsName = '-insights'
+var appInsightsName = '${environmentName}-insights'
 
 // Reference existing App Service Plan
 resource existingPlan 'Microsoft.Web/serverfarms@2023-12-01' existing = {
@@ -103,7 +103,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'AZURE_STORAGE_CONNECTION_STRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=;AccountKey=;EndpointSuffix=core.windows.net'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
         }
       ]
     }
@@ -113,6 +113,6 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
 // Outputs
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = appInsights.properties.ConnectionString
 output AZURE_APPSERVICE_NAME string = appService.name
-output AZURE_APPSERVICE_URI string = 'https://'
+output AZURE_APPSERVICE_URI string = 'https://${appService.properties.defaultHostName}'
 output AZURE_STORAGE_ACCOUNT_NAME string = storageAccount.name
 output AZURE_LOG_ANALYTICS_WORKSPACE_ID string = logAnalytics.id
