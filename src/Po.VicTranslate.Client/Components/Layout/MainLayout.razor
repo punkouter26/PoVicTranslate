@@ -1,0 +1,40 @@
+@namespace VictorianTranslator.Client.Components.Layout
+@inherits LayoutComponentBase
+
+<div class="urban-page">
+    <header class="urban-header">
+        <div class="header-content">
+            <div class="brand-section">
+                <h1 class="urban-brand">PoVicTranslate</h1>
+                <div class="tagline">Where Street Meets Elite</div>
+            </div>
+            <div class="header-actions">
+                <!-- System and Debug buttons removed -->
+            </div>
+        </div>
+        <div class="header-glow"></div>
+    </header>
+    
+    <main class="urban-main">
+        <div class="main-content">
+            @Body
+        </div>
+    </main>
+    
+    <footer class="urban-footer">
+        <div class="footer-content">
+            <div class="footer-text">
+                Transform your flow into sophistication
+            </div>
+            <div class="footer-credits">
+                Powered by AI • Built for the Culture
+            </div>
+        </div>
+    </footer>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>

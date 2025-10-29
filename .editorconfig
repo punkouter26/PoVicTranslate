@@ -1,0 +1,235 @@
+# EditorConfig is awesome: https://EditorConfig.org
+# REQUIRED: Code style enforcement for Po.VicTranslate
+# Run: dotnet format to apply these rules
+
+root = true
+
+# All files
+[*]
+charset = utf-8
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Code files
+[*.{cs,csx,vb,vbx}]
+indent_size = 4
+
+# XML project files
+[*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
+indent_size = 2
+
+# XML config files
+[*.{props,targets,ruleset,config,nuspec,resx,vsixmanifest,vsct}]
+indent_size = 2
+
+# JSON files
+[*.json]
+indent_size = 2
+
+# YAML files
+[*.{yml,yaml}]
+indent_size = 2
+
+# Markdown files
+[*.md]
+max_line_length = off
+trim_trailing_whitespace = false
+
+# PowerShell files
+[*.ps1]
+indent_size = 4
+
+# C# files
+[*.cs]
+
+# REQUIRED: File length constraint - warn if files exceed 500 lines
+# This is enforced as a preferred practice to maintain small, focused files
+# Informational severity allows compilation but highlights in IDE
+dotnet_diagnostic.CA1506.severity = suggestion
+
+#### Naming styles ####
+
+# Naming rules - enforce Po.VicTranslate.* pattern
+dotnet_diagnostic.IDE1006.severity = warning
+
+# PascalCase for types, methods, properties
+dotnet_naming_rule.types_should_be_pascal_case.severity = warning
+dotnet_naming_rule.types_should_be_pascal_case.symbols = types
+dotnet_naming_rule.types_should_be_pascal_case.style = pascal_case_style
+
+dotnet_naming_symbols.types.applicable_kinds = class,struct,interface,enum,delegate,record
+dotnet_naming_symbols.types.applicable_accessibilities = *
+
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# Interfaces must start with 'I'
+dotnet_naming_rule.interface_should_be_begins_with_i.severity = warning
+dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface
+dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i_style
+
+dotnet_naming_symbols.interface.applicable_kinds = interface
+dotnet_naming_symbols.interface.applicable_accessibilities = *
+
+dotnet_naming_style.begins_with_i_style.required_prefix = I
+dotnet_naming_style.begins_with_i_style.capitalization = pascal_case
+
+# Private fields should start with underscore
+dotnet_naming_rule.private_field_should_be_begins_with_underscore.severity = warning
+dotnet_naming_rule.private_field_should_be_begins_with_underscore.symbols = private_field
+dotnet_naming_rule.private_field_should_be_begins_with_underscore.style = begins_with_underscore_style
+
+dotnet_naming_symbols.private_field.applicable_kinds = field
+dotnet_naming_symbols.private_field.applicable_accessibilities = private
+
+dotnet_naming_style.begins_with_underscore_style.required_prefix = _
+dotnet_naming_style.begins_with_underscore_style.capitalization = camel_case
+
+#### .NET Code Quality ####
+
+# SOLID principles enforcement
+dotnet_diagnostic.CA1062.severity = warning  # Validate arguments
+dotnet_diagnostic.CA1303.severity = suggestion  # Don't hardcode strings
+dotnet_diagnostic.CA1508.severity = warning  # Avoid dead conditional code
+dotnet_diagnostic.CA1812.severity = warning  # Avoid uninstantiated internal classes
+dotnet_diagnostic.CA1822.severity = suggestion  # Mark members as static
+dotnet_diagnostic.CA2007.severity = none  # Don't enforce ConfigureAwait(false) in web apps
+
+# Performance
+dotnet_diagnostic.CA1806.severity = warning  # Don't ignore method results
+dotnet_diagnostic.CA1810.severity = warning  # Initialize static fields inline
+dotnet_diagnostic.CA1825.severity = warning  # Avoid zero-length array allocations
+dotnet_diagnostic.CA1826.severity = warning  # Use property instead of Linq method
+dotnet_diagnostic.CA1827.severity = warning  # Don't use Count/LongCount when Any can be used
+dotnet_diagnostic.CA1828.severity = warning  # Don't use CountAsync/LongCountAsync when AnyAsync can be used
+dotnet_diagnostic.CA1829.severity = warning  # Use Length/Count property instead of Linq Count method
+dotnet_diagnostic.CA1830.severity = warning  # Prefer strongly-typed Append and Insert method overloads on StringBuilder
+dotnet_diagnostic.CA1831.severity = warning  # Use AsSpan instead of Range-based indexers for string
+dotnet_diagnostic.CA1832.severity = warning  # Use AsSpan or AsMemory instead of Range-based indexers
+dotnet_diagnostic.CA1833.severity = warning  # Use AsSpan or AsMemory instead of Range-based indexers
+dotnet_diagnostic.CA1834.severity = warning  # Use StringBuilder.Append(char) for single character strings
+dotnet_diagnostic.CA1835.severity = warning  # Prefer the memory-based overloads of ReadAsync/WriteAsync
+dotnet_diagnostic.CA1836.severity = warning  # Prefer IsEmpty over Count when available
+dotnet_diagnostic.CA1837.severity = warning  # Use Environment.ProcessId instead of Process.GetCurrentProcess().Id
+dotnet_diagnostic.CA1838.severity = warning  # Avoid StringBuilder parameters for P/Invokes
+
+# Security
+dotnet_diagnostic.CA2119.severity = warning  # Seal methods that satisfy private interfaces
+dotnet_diagnostic.CA3001.severity = warning  # Review code for SQL injection vulnerabilities
+dotnet_diagnostic.CA3003.severity = warning  # Review code for file path injection vulnerabilities
+dotnet_diagnostic.CA3006.severity = warning  # Review code for process command injection vulnerabilities
+dotnet_diagnostic.CA3011.severity = warning  # Review code for DLL injection vulnerabilities
+dotnet_diagnostic.CA3012.severity = warning  # Review code for regex injection vulnerabilities
+
+# Maintainability - enforce small, focused files
+dotnet_diagnostic.CA1501.severity = suggestion  # Avoid excessive inheritance
+dotnet_diagnostic.CA1502.severity = warning  # Avoid excessive complexity
+dotnet_diagnostic.CA1505.severity = warning  # Avoid unmaintainable code
+dotnet_diagnostic.CA1506.severity = suggestion  # Avoid excessive class coupling
+
+#### C# Code Style ####
+
+# Prefer var everywhere
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Expression-bodied members
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_constructors = false:none
+csharp_style_expression_bodied_operators = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = when_on_single_line:suggestion
+csharp_style_expression_bodied_indexers = when_on_single_line:suggestion
+csharp_style_expression_bodied_accessors = when_on_single_line:suggestion
+csharp_style_expression_bodied_lambdas = when_on_single_line:suggestion
+csharp_style_expression_bodied_local_functions = when_on_single_line:suggestion
+
+# Pattern matching preferences
+csharp_style_pattern_matching_over_is_with_cast_check = true:warning
+csharp_style_pattern_matching_over_as_with_null_check = true:warning
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_pattern_matching = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+csharp_style_prefer_extended_property_pattern = true:suggestion
+
+# Null-checking preferences
+csharp_style_throw_expression = true:suggestion
+csharp_style_prefer_null_check_over_type_check = true:suggestion
+csharp_style_conditional_delegate_call = true:warning
+
+# Code block preferences
+csharp_prefer_braces = true:warning
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_prefer_method_group_conversion = true:suggestion
+csharp_style_prefer_top_level_statements = true:suggestion
+
+# Expression preferences
+csharp_prefer_simple_default_expression = true:suggestion
+csharp_style_prefer_local_over_anonymous_function = true:suggestion
+csharp_style_prefer_index_operator = true:suggestion
+csharp_style_prefer_range_operator = true:suggestion
+csharp_style_implicit_object_creation_when_type_is_apparent = true:suggestion
+csharp_style_prefer_tuple_swap = true:suggestion
+csharp_style_prefer_utf8_string_literals = true:suggestion
+csharp_style_inlined_variable_declaration = true:suggestion
+csharp_style_deconstructed_variable_declaration = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+
+# 'using' directive preferences
+csharp_using_directive_placement = outside_namespace:warning
+
+# Modifier preferences
+csharp_prefer_static_local_function = true:suggestion
+csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
+
+#### C# Formatting Rules ####
+
+# New line preferences
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# Indentation preferences
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_labels = no_change
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_case_contents_when_block = false
+
+# Space preferences
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_parentheses = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_declaration_empty_parameter_list_parentheses = false
+csharp_space_between_method_declaration_name_and_open_parenthesis = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_method_call_empty_parameter_list_parentheses = false
+csharp_space_between_method_call_name_and_opening_parenthesis = false
+csharp_space_after_comma = true
+csharp_space_after_dot = false
+csharp_space_after_semicolon_in_for_statement = true
+csharp_space_before_semicolon_in_for_statement = false
+csharp_space_around_declaration_statements = false
+csharp_space_before_open_square_brackets = false
+csharp_space_between_empty_square_brackets = false
+csharp_space_between_square_brackets = false
+
+# Wrapping preferences
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = true
+
+#### ANTI-PATTERNS TO AVOID ####
+# Example: Don't use string concatenation in loops - use StringBuilder
+# Example: Don't ignore async/await - always await async methods
+# Example: Don't catch generic exceptions without logging
+# Example: Don't expose mutable collections - use IReadOnlyCollection
