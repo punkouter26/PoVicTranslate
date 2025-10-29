@@ -1,0 +1,22 @@
+graph TB
+    SLN[PoVicTranslate.sln] --> API[Api Project]
+    SLN --> CLIENT[Client Project]
+    SLN --> TESTS[Test Projects]
+    
+    API --> AZURE[Azure Services]
+    API --> LOGGING[Serilog]
+    API --> CLIENT
+    
+    AZURE --> OPENAI[OpenAI GPT-4]
+    AZURE --> SPEECH[Speech Service]
+    AZURE --> APPINS[App Insights]
+    
+    TESTS --> UNIT[Unit Tests]
+    TESTS --> INT[Integration Tests]
+    TESTS --> E2E[E2E Tests]
+    
+    style SLN fill:#e1f5ff
+    style API fill:#fff4e1
+    style CLIENT fill:#e8f5e9
+    style TESTS fill:#fce4ec
+    style AZURE fill:#ede7f6

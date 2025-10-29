@@ -1,0 +1,61 @@
+graph TB
+    subgraph "Solution Structure"
+        SLN[PoVicTranslate.sln]
+        SLN --> API[Po.VicTranslate.Api]
+        SLN --> CLIENT[Po.VicTranslate.Client]
+        SLN --> UNIT[Po.VicTranslate.UnitTests]
+        SLN --> INT[Po.VicTranslate.IntegrationTests]
+        SLN --> E2E[Po.VicTranslate.E2ETests]
+    end
+    
+    subgraph "API Dependencies"
+        API --> ASPNET[Microsoft.AspNetCore.OpenApi 9.0.10]
+        API --> SWAG[Swashbuckle.AspNetCore 9.0.6]
+        API --> AOI[Azure.AI.OpenAI 2.1.0]
+        API --> SPEECH[Microsoft.CognitiveServices.Speech 1.46.0]
+        API --> SERI[Serilog.AspNetCore 9.0.0]
+        API --> SERIF[Serilog.Sinks.File 7.0.0]
+        API --> SERID[Serilog.Sinks.Debug 3.0.0]
+        API --> SERIAPP[Serilog.Sinks.ApplicationInsights 4.0.0]
+        API --> APPINS[Microsoft.ApplicationInsights.AspNetCore 2.23.0]
+        API --> WASM[Microsoft.AspNetCore.Components.WebAssembly.Server 9.0.10]
+        API --> HEALTH[Microsoft.Extensions.Diagnostics.HealthChecks 9.0.10]
+        API --> CLIENT
+    end
+    
+    subgraph "Client Dependencies"
+        CLIENT --> WASMRT[Microsoft.AspNetCore.Components.WebAssembly 9.0.10]
+        CLIENT --> WASMDEV[Microsoft.AspNetCore.Components.WebAssembly.DevServer 9.0.10]
+    end
+    
+    subgraph "Test Dependencies"
+        UNIT --> XUNIT[xUnit.net 3.1.0]
+        UNIT --> MOQ[Moq 4.20.72]
+        UNIT --> FLUENT[FluentAssertions 8.8.0]
+        UNIT --> COVER[Coverlet.collector 6.0.4]
+        
+        INT --> XUNIT
+        INT --> FLUENT
+        INT --> WEBFACT[Microsoft.AspNetCore.Mvc.Testing 9.0.10]
+        
+        E2E --> PLAY[Playwright 1.48.0]
+        E2E --> NODE[Node.js 18+]
+    end
+    
+    subgraph "Azure Services"
+        API -.-> AOAI[Azure OpenAI GPT-4]
+        API -.-> ASPEECH[Azure Speech Service]
+        API -.-> AAPPINS[Azure Application Insights]
+        API -.-> ALAWORK[Azure Log Analytics]
+    end
+    
+    style SLN fill:#e1f5ff
+    style API fill:#fff4e1
+    style CLIENT fill:#e8f5e9
+    style UNIT fill:#fce4ec
+    style INT fill:#fce4ec
+    style E2E fill:#fce4ec
+    style AOAI fill:#ede7f6
+    style ASPEECH fill:#ede7f6
+    style AAPPINS fill:#ede7f6
+    style ALAWORK fill:#ede7f6

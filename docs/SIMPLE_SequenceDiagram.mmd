@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant User
+    participant Blazor
+    participant API
+    participant Service
+    participant OpenAI as Azure OpenAI
+    
+    User->>Blazor: Enter text
+    User->>Blazor: Click Translate
+    Blazor->>API: POST /api/translation/translate
+    API->>Service: TranslateAsync()
+    Service->>OpenAI: Request translation
+    OpenAI-->>Service: Victorian English text
+    Service-->>API: Translation response
+    API-->>Blazor: 200 OK
+    Blazor->>User: Display translation
