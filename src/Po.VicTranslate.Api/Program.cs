@@ -16,7 +16,7 @@ var connectionString = builder.Configuration["ApplicationInsights:ConnectionStri
 var telemetryConfig = TelemetryConfiguration.CreateDefault();
 telemetryConfig.ConnectionString = connectionString;
 
-Log.Logger = new LoggerConfiguration()
+var logConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "PoVicTranslate.Api")
@@ -25,8 +25,12 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("System", LogEventLevel.Warning)
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-    .WriteTo.Debug(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
-    .WriteTo.File(
+    .WriteTo.Debug(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}");
+
+// Only add file logging in development
+if (builder.Environment.IsDevelopment())
+{
+    logConfig.WriteTo.File(
         Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", "log.txt"),
         retainedFileCountLimit: 1,
         flushToDiskInterval: TimeSpan.FromSeconds(1),
@@ -34,12 +38,16 @@ Log.Logger = new LoggerConfiguration()
         rollOnFileSizeLimit: false,
         shared: true,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"
-    )
-    .WriteTo.ApplicationInsights(
-        telemetryConfig,
-        TelemetryConverter.Traces,
-        LogEventLevel.Information)
-    .CreateLogger();
+    );
+}
+
+// Add Application Insights sink
+logConfig.WriteTo.ApplicationInsights(
+    telemetryConfig,
+    TelemetryConverter.Traces,
+    LogEventLevel.Information);
+
+Log.Logger = logConfig.CreateLogger();
 
 builder.Host.UseSerilog(); // Use Serilog for logging
 

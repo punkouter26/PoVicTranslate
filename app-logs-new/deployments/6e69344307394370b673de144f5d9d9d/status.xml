@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>6e69344307394370b673de144f5d9d9d</id>
+  <author>N/A</author>
+  <deployer>GITHUB_ZIP_DEPLOY</deployer>
+  <authorEmail>N/A</authorEmail>
+  <message>{"type":"deployment","sha":"55f742ab5a8a825b6f6ba4d8a5de02b823794b27","repoName":"punkouter26/PoVicTranslate","actor":"punkouter26","slotName":"production","commitMessage":"Add Azure deployment E2E tests for translation and speech flow"}</message>
+  <progress></progress>
+  <status>Success</status>
+  <statusText></statusText>
+  <lastSuccessEndTime>2025-10-21T01:54:24.6680985Z</lastSuccessEndTime>
+  <receivedTime>2025-10-21T01:54:24.339523Z</receivedTime>
+  <startTime>2025-10-21T01:54:24.464523Z</startTime>
+  <endTime>2025-10-21T01:54:24.6680985Z</endTime>
+  <complete>True</complete>
+  <is_temp>False</is_temp>
+  <is_readonly>True</is_readonly>
+  <project_type>Run-From-Zip</project_type>
+  <vsproject_id></vsproject_id>
+</deployment>

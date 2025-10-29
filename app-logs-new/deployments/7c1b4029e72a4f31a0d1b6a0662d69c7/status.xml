@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>7c1b4029e72a4f31a0d1b6a0662d69c7</id>
+  <author>N/A</author>
+  <deployer>GITHUB_ZIP_DEPLOY</deployer>
+  <authorEmail>N/A</authorEmail>
+  <message>{"type":"deployment","sha":"f5a563ce63452f0e5d1b76b19862569030043e5c","repoName":"punkouter26/PoVicTranslate","actor":"punkouter26","slotName":"production","commitMessage":"Disable Service Worker and add enhanced error logging for debugging Blazor startup issues"}</message>
+  <progress></progress>
+  <status>Success</status>
+  <statusText></statusText>
+  <lastSuccessEndTime>2025-10-21T02:16:56.2608009Z</lastSuccessEndTime>
+  <receivedTime>2025-10-21T02:16:55.9167492Z</receivedTime>
+  <startTime>2025-10-21T02:16:56.026738Z</startTime>
+  <endTime>2025-10-21T02:16:56.2608009Z</endTime>
+  <complete>True</complete>
+  <is_temp>False</is_temp>
+  <is_readonly>True</is_readonly>
+  <project_type>Run-From-Zip</project_type>
+  <vsproject_id></vsproject_id>
+</deployment>
