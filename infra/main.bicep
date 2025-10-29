@@ -1,193 +1,35 @@
-targetScope = 'resourceGroup'
+// PoVicTranslate - Main Bicep Infrastructure File
+targetScope = 'subscription'
 
-@minLength(1)
-@maxLength(64)
-@description('Name of the environment used for resource naming')
-param environmentName string
+param environmentName string = 'PoVicTranslate'
+param location string = 'eastus2'
 
-@minLength(1)
-@description('Primary location for all resources')
-param location string = resourceGroup().location
-
-// Reference to the existing shared App Service Plan in PoShared resource group
-// Using PoShared3 plan (West Central US) with 0 sites - has available space
-resource existingAppServicePlan 'Microsoft.Web/serverfarms@2023-12-01' existing = {
-  name: 'PoShared3'
-  scope: resourceGroup('PoShared')
+var resourceGroupName = 'PoVicTranslate'
+var tags = {
+  'azd-env-name': environmentName
+  'app-name': 'PoVicTranslate'
 }
 
-// Create Azure OpenAI Service
-resource openAI 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
-  name: 'PoVicTranslate-OpenAI'
+resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+  name: resourceGroupName
   location: location
-  kind: 'OpenAI'
-  sku: {
-    name: 'S0'
-  }
-  properties: {
-    customSubDomainName: 'povictranslate-openai'
-    publicNetworkAccess: 'Enabled'
-  }
-  tags: {
-    'azd-env-name': environmentName
+  tags: tags
+}
+
+module resources './resources.bicep' = {
+  name: 'resources-deployment'
+  scope: rg
+  params: {
+    location: location
+    environmentName: environmentName
+    tags: tags
   }
 }
 
-// Deploy GPT-4o model
-resource gpt4oDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
-  parent: openAI
-  name: 'gpt-4o'
-  sku: {
-    name: 'Standard'
-    capacity: 10
-  }
-  properties: {
-    model: {
-      format: 'OpenAI'
-      name: 'gpt-4o'
-      version: '2024-08-06'
-    }
-  }
-}
-
-// Create Azure Speech Service
-resource speechService 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
-  name: 'PoVicTranslate-Speech'
-  location: location
-  kind: 'SpeechServices'
-  sku: {
-    name: 'S0'
-  }
-  properties: {
-    customSubDomainName: 'povictranslate-speech'
-    publicNetworkAccess: 'Enabled'
-  }
-  tags: {
-    'azd-env-name': environmentName
-  }
-}
-
-// Create Log Analytics Workspace for Application Insights
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: 'PoVicTranslate'
-  location: location
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: 30
-  }
-  tags: {
-    'azd-env-name': environmentName
-  }
-}
-
-// Create Application Insights
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: 'PoVicTranslate'
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    WorkspaceResourceId: logAnalyticsWorkspace.id
-    RetentionInDays: 30
-  }
-  tags: {
-    'azd-env-name': environmentName
-  }
-}
-
-// App Service
-resource appService 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'PoVicTranslate'
-  location: 'westcentralus'  // Must match the PoShared3 plan location
-  kind: 'app'
-  properties: {
-    serverFarmId: existingAppServicePlan.id
-    httpsOnly: true
-    siteConfig: {
-      netFrameworkVersion: 'v9.0'
-      use32BitWorkerProcess: true  // Required for F1 tier
-      alwaysOn: false  // Not supported in F1 tier
-      appSettings: [
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsights.properties.ConnectionString
-        }
-        {
-          name: 'WEBSITE_RUN_FROM_PACKAGE'
-          value: '1'
-        }
-        // Azure OpenAI Configuration
-        {
-          name: 'ApiSettings__AzureOpenAIApiKey'
-          value: openAI.listKeys().key1
-        }
-        {
-          name: 'ApiSettings__AzureOpenAIEndpoint'
-          value: openAI.properties.endpoint
-        }
-        {
-          name: 'ApiSettings__AzureOpenAIDeploymentName'
-          value: 'gpt-4o'
-        }
-        // Azure Speech Service Configuration
-        {
-          name: 'ApiSettings__AzureSpeechSubscriptionKey'
-          value: speechService.listKeys().key1
-        }
-        {
-          name: 'ApiSettings__AzureSpeechRegion'
-          value: location
-        }
-      ]
-    }
-  }
-  tags: {
-    'azd-env-name': environmentName
-    'azd-service-name': 'victorianupdater-server'
-  }
-}
-
-//  App Service diagnostic settings
-resource appServiceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  scope: appService
-  name: 'app-service-diagnostics'
-  properties: {
-    workspaceId: logAnalyticsWorkspace.id
-    logs: [
-      {
-        category: 'AppServiceHTTPLogs'
-        enabled: true
-      }
-      {
-        category: 'AppServiceConsoleLogs'
-        enabled: true
-      }
-      {
-        category: 'AppServiceAppLogs'
-        enabled: true
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-      }
-    ]
-  }
-}
-
-// Outputs required by azd
-output RESOURCE_GROUP_ID string = resourceGroup().id
 output AZURE_LOCATION string = location
-output APPLICATIONINSIGHTS_CONNECTION_STRING string = applicationInsights.properties.ConnectionString
-output SERVICE_VICTORIANUPDATER_SERVER_NAME string = appService.name
-output SERVICE_VICTORIANUPDATER_SERVER_URI string = 'https://${appService.properties.defaultHostName}'
-
-// Azure OpenAI outputs
-output AZURE_OPENAI_ENDPOINT string = openAI.properties.endpoint
-output AZURE_OPENAI_DEPLOYMENT_NAME string = 'gpt-4o'
-
-// Azure Speech Service outputs
-output AZURE_SPEECH_REGION string = location
+output AZURE_RESOURCE_GROUP string = rg.name
+output AZURE_TENANT_ID string = tenant().tenantId
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = resources.outputs.APPLICATIONINSIGHTS_CONNECTION_STRING
+output AZURE_APPSERVICE_NAME string = resources.outputs.AZURE_APPSERVICE_NAME
+output AZURE_APPSERVICE_URI string = resources.outputs.AZURE_APPSERVICE_URI
+output AZURE_STORAGE_ACCOUNT_NAME string = resources.outputs.AZURE_STORAGE_ACCOUNT_NAME

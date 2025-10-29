@@ -4,7 +4,7 @@ name: PoVicTranslate
 infra:
   provider: bicep
 services:
-  victorianupdater-server:
-    project: VictorianTranslator.Server
+  api:
+    project: ./src/Po.VicTranslate.Api
     host: appservice
     language: dotnet
