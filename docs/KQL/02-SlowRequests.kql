@@ -1,0 +1,121 @@
+// PoVicTranslate - Server Performance Analysis  
+// Phase 4: Essential KQL Query #2 - Top 10 Slowest Requests
+// Purpose: Identify performance bottlenecks and slow API endpoints
+// Target: Application Insights > Logs
+// KQL Documentation: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/
+
+// Query 1: Top 10 slowest requests (last 24 hours)
+requests
+| where timestamp > ago(24h)
+| where success == true
+| top 10 by duration desc
+| project 
+    Timestamp = format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss'),
+    Endpoint = name,
+    DurationSeconds = duration / 1000.0,
+    ResultCode = resultCode,
+    ClientIP = client_IP,
+    OperationId = operation_Id
+| order by DurationSeconds desc
+
+// Query 2: Average response time by endpoint (last 7 days)
+requests
+| where timestamp > ago(7d)
+| summarize 
+    RequestCount = count(),
+    AvgDurationMs = avg(duration),
+    P50DurationMs = percentile(duration, 50),
+    P95DurationMs = percentile(duration, 95),
+    P99DurationMs = percentile(duration, 99),
+    MaxDurationMs = max(duration)
+    by Endpoint = name
+| where RequestCount > 5  // Filter out rarely-called endpoints
+| project 
+    Endpoint,
+    RequestCount,
+    AvgDurationMs = round(AvgDurationMs, 2),
+    P50DurationMs = round(P50DurationMs, 2),
+    P95DurationMs = round(P95DurationMs, 2),
+    P99DurationMs = round(P99DurationMs, 2),
+    MaxDurationMs = round(MaxDurationMs, 2)
+| order by P95DurationMs desc
+| take 10
+
+// Query 3: Slow requests trend over time (hourly breakdown)
+requests
+| where timestamp > ago(7d)
+| where duration > 3000  // Requests slower than 3 seconds
+| summarize 
+    SlowRequestCount = count(),
+    AvgDurationMs = avg(duration)
+    by Endpoint = name, bin(timestamp, 1h)
+| project 
+    Hour = format_datetime(timestamp, 'yyyy-MM-dd HH:mm'),
+    Endpoint,
+    SlowRequestCount,
+    AvgDurationMs = round(AvgDurationMs, 2)
+| order by Hour desc, SlowRequestCount desc
+
+// Query 4: Performance degradation detection (compare recent vs baseline)
+let baseline = requests
+    | where timestamp between (ago(14d) .. ago(7d))
+    | summarize BaselineAvg = avg(duration) by name;
+let recent = requests
+    | where timestamp > ago(7d)
+    | summarize RecentAvg = avg(duration) by name;
+baseline
+| join kind=inner recent on name
+| extend PercentageChange = round((RecentAvg - BaselineAvg) / BaselineAvg * 100, 2)
+| where PercentageChange > 20  // Show endpoints >20% slower
+| project 
+    Endpoint = name,
+    BaselineAvgMs = round(BaselineAvg, 2),
+    RecentAvgMs = round(RecentAvg, 2),
+    PercentageSlower = PercentageChange
+| order by PercentageSlower desc
+
+// Query 5: Dependency calls contributing to slow requests
+requests
+| where timestamp > ago(24h)
+| where duration > 5000  // Requests slower than 5 seconds
+| join kind=inner (
+    dependencies
+    | where timestamp > ago(24h)
+) on operation_Id
+| project 
+    RequestTimestamp = format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss'),
+    Endpoint = name,
+    TotalDurationMs = duration,
+    DependencyName = name1,
+    DependencyType = type,
+    DependencyDurationMs = duration1,
+    DependencySuccess = success1
+| order by TotalDurationMs desc
+| take 20
+
+// Query 6: Custom telemetry - Slowest operations by business logic
+customEvents
+| where timestamp > ago(24h)
+| where name == "PerformanceMetric"
+| extend DurationMs = todouble(customMeasurements.DurationMs)
+| where DurationMs > 2000  // Operations slower than 2 seconds
+| summarize 
+    Count = count(),
+    AvgDurationMs = avg(DurationMs),
+    MaxDurationMs = max(DurationMs)
+    by OperationName = tostring(customDimensions.OperationName)
+| project 
+    OperationName,
+    SlowOperationCount = Count,
+    AvgDurationMs = round(AvgDurationMs, 2),
+    MaxDurationMs = round(MaxDurationMs, 2)
+| order by AvgDurationMs desc
+| take 10
+
+// Usage Notes:
+// - Run in Application Insights > Logs
+// - Adjust duration thresholds based on SLA requirements
+// - Create alerts for P95 > threshold (e.g., 5000ms)
+// - Investigate dependencies for slow external calls
+// - Use operation_Id to trace full request lifecycle
+// - Pin critical queries to dashboard for monitoring

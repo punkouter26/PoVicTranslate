@@ -6,27 +6,44 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
 using Serilog;
+using Serilog.Events;
+using Microsoft.ApplicationInsights.Extensibility;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Serilog with Debug sink for rich console output in Development
+// Phase 4: Configure Serilog with structured logging and Application Insights sink
+var connectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+var telemetryConfig = TelemetryConfiguration.CreateDefault();
+telemetryConfig.ConnectionString = connectionString;
+
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
-    .WriteTo.Console()
-    .WriteTo.Debug(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}") // REQUIRED: Debug sink with rich format
+    .Enrich.WithProperty("Application", "PoVicTranslate.Api")
+    .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.Debug(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
     .WriteTo.File(
-        Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", "log.txt"), // Adjusted for new folder structure
+        Path.Combine(builder.Environment.ContentRootPath, "..", "..", "..", "log.txt"),
         retainedFileCountLimit: 1,
         flushToDiskInterval: TimeSpan.FromSeconds(1),
         fileSizeLimitBytes: null,
         rollOnFileSizeLimit: false,
         shared: true,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"
     )
+    .WriteTo.ApplicationInsights(
+        telemetryConfig,
+        TelemetryConverter.Traces,
+        LogEventLevel.Information)
     .CreateLogger();
 
 builder.Host.UseSerilog(); // Use Serilog for logging
+
+Log.Information("PoVicTranslate API starting up with structured logging and Application Insights telemetry");
 
 // Add services to the container.
 builder.Services.AddApplicationInsightsTelemetry(); // Add Application Insights telemetry
@@ -60,6 +77,7 @@ builder.Services.AddScoped<IConfigurationValidator, ConfigurationValidator>();
 builder.Services.AddScoped<IDiagnosticService, DiagnosticService>();
 builder.Services.AddScoped<ILyricsManagementService, LyricsManagementService>();
 builder.Services.AddSingleton<IDebugLogService, DebugLogService>(); // Add Debug Log Service as singleton
+builder.Services.AddSingleton<ICustomTelemetryService, CustomTelemetryService>(); // Phase 4: Custom telemetry
 
 // Add CORS policy
 builder.Services.AddCors(options =>

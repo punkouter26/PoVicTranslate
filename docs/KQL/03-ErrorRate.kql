@@ -1,0 +1,177 @@
+// PoVicTranslate - Error Rate Analysis
+// Phase 4: Essential KQL Query #3 - Error Rate and Failed Requests (Last 24 Hours)
+// Purpose: Monitor application health and identify failure patterns
+// Target: Application Insights > Logs
+// KQL Documentation: https://learn.microsoft.com/en-us/azure/data-explorer/kusto/query/
+
+// Query 1: Overall error rate percentage (last 24 hours)
+requests
+| where timestamp > ago(24h)
+| summarize 
+    TotalRequests = count(),
+    FailedRequests = countif(success == false),
+    SuccessfulRequests = countif(success == true)
+| extend ErrorRatePercent = round((FailedRequests * 100.0) / TotalRequests, 2)
+| project 
+    TimeRange = "Last 24 Hours",
+    TotalRequests,
+    SuccessfulRequests,
+    FailedRequests,
+    ErrorRatePercent,
+    SuccessRatePercent = round(100.0 - ErrorRatePercent, 2)
+
+// Query 2: Error rate by endpoint (last 24 hours)
+requests
+| where timestamp > ago(24h)
+| summarize 
+    Total = count(),
+    Failed = countif(success == false),
+    Successful = countif(success == true)
+    by Endpoint = name
+| extend ErrorRatePercent = round((Failed * 100.0) / Total, 2)
+| where Failed > 0  // Only show endpoints with errors
+| project 
+    Endpoint,
+    TotalRequests = Total,
+    FailedRequests = Failed,
+    ErrorRatePercent
+| order by ErrorRatePercent desc, FailedRequests desc
+
+// Query 3: Error rate trend over time (hourly)
+requests
+| where timestamp > ago(24h)
+| summarize 
+    Total = count(),
+    Failed = countif(success == false)
+    by bin(timestamp, 1h)
+| extend ErrorRatePercent = round((Failed * 100.0) / Total, 2)
+| project 
+    Hour = format_datetime(timestamp, 'yyyy-MM-dd HH:mm'),
+    TotalRequests = Total,
+    FailedRequests = Failed,
+    ErrorRatePercent
+| order by Hour desc
+
+// Query 4: Failed requests with error details
+requests
+| where timestamp > ago(24h)
+| where success == false
+| project 
+    Timestamp = format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss'),
+    Endpoint = name,
+    ResultCode = resultCode,
+    DurationMs = duration,
+    ClientIP = client_IP,
+    OperationId = operation_Id
+| order by Timestamp desc
+| take 50
+
+// Query 5: Error distribution by HTTP status code
+requests
+| where timestamp > ago(24h)
+| where success == false
+| summarize ErrorCount = count() by StatusCode = resultCode
+| extend StatusCategory = case(
+    StatusCode >= 500, "5xx Server Error",
+    StatusCode >= 400, "4xx Client Error",
+    "Other"
+)
+| project StatusCode, StatusCategory, ErrorCount
+| order by ErrorCount desc
+
+// Query 6: Exceptions correlation with failed requests
+exceptions
+| where timestamp > ago(24h)
+| summarize 
+    ExceptionCount = count(),
+    UniqueExceptions = dcount(type)
+    by ExceptionType = type
+| project 
+    ExceptionType,
+    ExceptionCount,
+    UniqueExceptions
+| order by ExceptionCount desc
+| take 10
+
+// Query 7: Failed requests with exception details
+requests
+| where timestamp > ago(24h)
+| where success == false
+| join kind=leftouter (
+    exceptions
+    | where timestamp > ago(24h)
+) on operation_Id
+| project 
+    Timestamp = format_datetime(timestamp, 'yyyy-MM-dd HH:mm:ss'),
+    Endpoint = name,
+    StatusCode = resultCode,
+    ExceptionType = type,
+    ExceptionMessage = outerMessage,
+    InnerException = innermostMessage
+| order by Timestamp desc
+| take 20
+
+// Query 8: Error spike detection (compare to previous 24h)
+let current = requests
+    | where timestamp > ago(24h)
+    | summarize CurrentErrors = countif(success == false);
+let previous = requests
+    | where timestamp between (ago(48h) .. ago(24h))
+    | summarize PreviousErrors = countif(success == false);
+current
+| extend PreviousErrors = toscalar(previous)
+| extend 
+    PercentageChange = round((CurrentErrors - PreviousErrors) * 100.0 / PreviousErrors, 2),
+    IsSpike = CurrentErrors > (PreviousErrors * 1.5)  // 50% increase = spike
+| project 
+    CurrentPeriod = "Last 24 Hours",
+    CurrentErrors,
+    PreviousPeriod = "Previous 24 Hours",
+    PreviousErrors,
+    PercentageChange,
+    IsErrorSpike = IsSpike
+
+// Query 9: Availability percentage by 5-minute intervals
+requests
+| where timestamp > ago(24h)
+| summarize 
+    Total = count(),
+    Successful = countif(success == true)
+    by bin(timestamp, 5m)
+| extend AvailabilityPercent = round((Successful * 100.0) / Total, 2)
+| where AvailabilityPercent < 100  // Show only periods with errors
+| project 
+    TimeWindow = format_datetime(timestamp, 'yyyy-MM-dd HH:mm'),
+    TotalRequests = Total,
+    AvailabilityPercent,
+    DowntimePercent = round(100.0 - AvailabilityPercent, 2)
+| order by AvailabilityPercent asc
+
+// Query 10: Custom telemetry - Translation success rate
+customEvents
+| where timestamp > ago(24h)
+| where name == "TranslationRequest"
+| extend Success = tobool(customDimensions.Success)
+| summarize 
+    Total = count(),
+    Successful = countif(Success == true),
+    Failed = countif(Success == false)
+| extend 
+    SuccessRatePercent = round((Successful * 100.0) / Total, 2),
+    ErrorRatePercent = round((Failed * 100.0) / Total, 2)
+| project 
+    TimeRange = "Last 24 Hours",
+    TotalTranslations = Total,
+    SuccessfulTranslations = Successful,
+    FailedTranslations = Failed,
+    SuccessRatePercent,
+    ErrorRatePercent
+
+// Usage Notes:
+// - Run in Application Insights > Logs
+// - Set alerts when ErrorRatePercent > 5% for 5 minutes
+// - Investigate 4xx errors for client issues (bad requests, auth)
+// - Investigate 5xx errors for server issues (bugs, dependencies)
+// - Use operation_Id to trace full error context
+// - Create dashboard with error rate tiles
+// - Monitor availability SLA (target: >99.9%)

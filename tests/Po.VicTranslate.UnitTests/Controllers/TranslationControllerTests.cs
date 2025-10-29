@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Po.VicTranslate.Api.Models;
 using Po.VicTranslate.Api.Controllers;
@@ -11,12 +12,19 @@ namespace VictorianTranslator.UnitTests.Controllers;
 public class TranslationControllerTests
 {
     private readonly Mock<ITranslationService> _mockTranslationService;
+    private readonly Mock<ICustomTelemetryService> _mockTelemetryService;
+    private readonly Mock<ILogger<TranslationController>> _mockLogger;
     private readonly TranslationController _controller;
 
     public TranslationControllerTests()
     {
         _mockTranslationService = new Mock<ITranslationService>();
-        _controller = new TranslationController(_mockTranslationService.Object);
+        _mockTelemetryService = new Mock<ICustomTelemetryService>();
+        _mockLogger = new Mock<ILogger<TranslationController>>();
+        _controller = new TranslationController(
+            _mockTranslationService.Object,
+            _mockTelemetryService.Object,
+            _mockLogger.Object);
     }
 
     [Fact]
