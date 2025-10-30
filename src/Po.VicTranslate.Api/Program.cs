@@ -12,9 +12,13 @@ using Microsoft.ApplicationInsights.Extensibility;
 var builder = WebApplication.CreateBuilder(args);
 
 // Phase 4: Configure Serilog with structured logging and Application Insights sink
-var connectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+var connectionString = builder.Configuration["ApplicationInsights:ConnectionString"] 
+    ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 var telemetryConfig = TelemetryConfiguration.CreateDefault();
-telemetryConfig.ConnectionString = connectionString;
+if (!string.IsNullOrEmpty(connectionString))
+{
+    telemetryConfig.ConnectionString = connectionString;
+}
 
 var logConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
