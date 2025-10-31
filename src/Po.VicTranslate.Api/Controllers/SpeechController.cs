@@ -50,18 +50,22 @@ public class SpeechController : ControllerBase
         {
             _logger.LogInformation("Received request to synthesize speech for text: '{Text}'", text);
             byte[] audioBytes = await _audioSynthesisService.SynthesizeSpeechAsync(text);
-            _logger.LogInformation("Successfully synthesized speech. Returning audio stream.");
+            _logger.LogInformation("Successfully synthesized speech. Audio size: {Size} bytes", audioBytes.Length);
 
-            // Save the audio to a file for debugging
-            var audioOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "audio_output");
-            if (!Directory.Exists(audioOutputPath))
+            // Try to save audio for debugging (optional, may fail in Azure)
+            try
             {
+                var audioOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "audio_output");
                 Directory.CreateDirectory(audioOutputPath);
+                var fileName = $"speech_{Guid.NewGuid()}.mp3";
+                var filePath = Path.Combine(audioOutputPath, fileName);
+                await System.IO.File.WriteAllBytesAsync(filePath, audioBytes);
+                _logger.LogInformation("Saved synthesized audio to: {FilePath}", filePath);
             }
-            var fileName = $"speech_{Guid.NewGuid()}.mp3"; // Changed extension to mp3
-            var filePath = Path.Combine(audioOutputPath, fileName);
-            await System.IO.File.WriteAllBytesAsync(filePath, audioBytes);
-            _logger.LogInformation("Saved synthesized audio to: {FilePath}", filePath);
+            catch (Exception saveEx)
+            {
+                _logger.LogWarning(saveEx, "Could not save audio file (this is optional and can be ignored)");
+            }
 
             return File(audioBytes, "audio/mpeg"); // MP3 format
         }
