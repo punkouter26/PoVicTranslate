@@ -68,12 +68,12 @@ public class SpeechController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogError(ex, "Speech service not configured.");
-            return StatusCode(500, "Speech service is not configured correctly. Please check server logs.");
+            return StatusCode(500, $"Speech service is not configured correctly: {ex.Message}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error synthesizing speech.");
-            return StatusCode(500, "An error occurred during speech synthesis. Please check server logs.");
+            _logger.LogError(ex, "Error synthesizing speech. Type: {ExceptionType}, Message: {Message}", ex.GetType().Name, ex.Message);
+            return StatusCode(500, $"An error occurred during speech synthesis: {ex.Message}");
         }
     }
 }
