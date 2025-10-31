@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Po.VicTranslate.Api.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.CognitiveServices.Speech;
+using Microsoft.Extensions.Options;
+using Po.VicTranslate.Api.Configuration;
 
 namespace Po.VicTranslate.Api.Controllers;
 
@@ -10,11 +13,29 @@ public class SpeechController : ControllerBase
 {
     private readonly IAudioSynthesisService _audioSynthesisService;
     private readonly ILogger<SpeechController> _logger;
+    private readonly ApiSettings _apiSettings;
 
-    public SpeechController(IAudioSynthesisService audioSynthesisService, ILogger<SpeechController> logger)
+    public SpeechController(IAudioSynthesisService audioSynthesisService, ILogger<SpeechController> logger, IOptions<ApiSettings> apiSettings)
     {
         _audioSynthesisService = audioSynthesisService;
         _logger = logger;
+        ArgumentNullException.ThrowIfNull(apiSettings);
+        _apiSettings = apiSettings.Value;
+    }
+
+    [HttpGet("test-config")]
+    public IActionResult TestConfiguration()
+    {
+        var hasKey = !string.IsNullOrWhiteSpace(_apiSettings.AzureSpeechSubscriptionKey);
+        var hasRegion = !string.IsNullOrWhiteSpace(_apiSettings.AzureSpeechRegion);
+        
+        return Ok(new
+        {
+            HasSubscriptionKey = hasKey,
+            KeyPrefix = hasKey ? _apiSettings.AzureSpeechSubscriptionKey.Substring(0, Math.Min(8, _apiSettings.AzureSpeechSubscriptionKey.Length)) + "..." : "MISSING",
+            Region = _apiSettings.AzureSpeechRegion ?? "MISSING",
+            ConfigurationValid = hasKey && hasRegion
+        });
     }
 
     [HttpPost("synthesize")]
