@@ -13,7 +13,7 @@ export default defineConfig({
   reporter: 'html',
   timeout: 60000, // 60 seconds for slower Blazor WASM loading
   use: {
-    baseURL: 'http://localhost:5000', // REQUIRED: Local ports HTTP 5000 and HTTPS 5001
+    baseURL: 'http://localhost:5002', // Use different port to avoid conflicts
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -35,9 +35,13 @@ export default defineConfig({
 
   // Web server configuration - starts the app before tests
   webServer: {
-    command: 'dotnet run --project ../../src/Po.VicTranslate.Api/Po.VicTranslate.Api.csproj',
-    url: 'http://localhost:5000/api/health', // REQUIRED: Health check endpoint
+    command: 'dotnet run --project ../../src/Po.VicTranslate.Api/Po.VicTranslate.Api.csproj --launch-profile http',
+    url: 'http://localhost:5002/api/health/live', // Use different port
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes to start
+    env: {
+      'ASPNETCORE_URLS': 'http://localhost:5002',
+      'DISABLE_HTTPS_REDIRECTION': 'true'
+    }
   },
 });

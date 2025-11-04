@@ -5,7 +5,16 @@ class BrowserDebugService {
         this.sessionId = this.generateSessionId();
         this.isInitialized = false;
         this.logQueue = [];
+        // Detect E2E test mode - disable aggressive logging
+        this.isE2ETest = this.detectE2ETestMode();
         this.init();
+    }
+
+    detectE2ETestMode() {
+        // Detect Playwright/E2E test environment
+        return navigator.webdriver === true || 
+               window.location.search.includes('e2e=true') ||
+               window.__playwright !== undefined;
     }
 
     generateSessionId() {
@@ -38,6 +47,12 @@ class BrowserDebugService {
     }
 
     interceptConsole() {
+        // Skip console interception in E2E test mode
+        if (this.isE2ETest) {
+            console.log('[E2E Mode] Console interception disabled');
+            return;
+        }
+        
         const originalConsole = { ...console };
         
         ['log', 'info', 'warn', 'error', 'debug'].forEach(level => {
@@ -172,6 +187,12 @@ class BrowserDebugService {
     }
 
     async sendToServer(type, payload) {
+        // Skip sending logs during E2E tests to avoid network activity
+        if (this.isE2ETest) {
+            console.log('[E2E Mode] Skipping debug log:', type, payload);
+            return;
+        }
+        
         if (!this.isInitialized && type !== 'event') {
             this.logQueue.push({ type, payload });
             return;

@@ -11,6 +11,29 @@ using Microsoft.ApplicationInsights.Extensibility;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel for HTTP-only mode if requested (for E2E tests)
+// Only override Kestrel if explicitly requested via environment variable
+var disableHttpsRedirection = Environment.GetEnvironmentVariable("DISABLE_HTTPS_REDIRECTION");
+var httpOnlyMode = !string.IsNullOrEmpty(disableHttpsRedirection) && 
+                   (disableHttpsRedirection.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                    disableHttpsRedirection == "1");
+
+Console.WriteLine($"DEBUG: DISABLE_HTTPS_REDIRECTION={disableHttpsRedirection}, httpOnlyMode={httpOnlyMode}");
+                    
+if (httpOnlyMode)
+{
+    var port = builder.Configuration.GetValue<int>("HTTP_PORT", 5002); // Default to 5002 for E2E tests
+    Console.WriteLine($"DEBUG: Configuring Kestrel for HTTP-only mode on port {port}");
+    builder.WebHost.ConfigureKestrel(serverOptions =>
+    {
+        serverOptions.ListenLocalhost(port); // HTTP only
+    });
+}
+else
+{
+    Console.WriteLine("DEBUG: Using default Kestrel configuration from launchSettings.json");
+}
+
 // Phase 4: Configure Serilog with structured logging and Application Insights sink
 var connectionString = builder.Configuration["ApplicationInsights:ConnectionString"] 
     ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
@@ -57,8 +80,13 @@ builder.Host.UseSerilog(); // Use Serilog for logging
 
 Log.Information("PoVicTranslate API starting up with structured logging and Application Insights telemetry");
 
+try
+{
+    Console.WriteLine("DEBUG: Adding services to container...");
+
 // Add services to the container.
 builder.Services.AddApplicationInsightsTelemetry(); // Add Application Insights telemetry
+Console.WriteLine("DEBUG: Application Insights telemetry added");
 
 // REQUIRED: Add RFC 7807 Problem Details exception handler
 builder.Services.AddExceptionHandler<Po.VicTranslate.Api.Middleware.ProblemDetailsExceptionHandler>();
@@ -130,7 +158,13 @@ else
 
 app.UseCors(); // Always use CORS
 app.UseMiddleware<DebugLoggingMiddleware>(); // Add debug logging middleware
-app.UseHttpsRedirection();
+
+// Only use HTTPS redirection if not explicitly disabled (for E2E tests)
+if (!httpOnlyMode)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 app.UseRouting();
@@ -216,7 +250,21 @@ app.MapRazorPages();
 // MapFallbackToFile automatically handles non-API routes
 app.MapFallbackToFile("index.html");
 
-app.Run();
+    Console.WriteLine("DEBUG: About to call app.Run()...");
+    app.Run();
+    Console.WriteLine("DEBUG: app.Run() completed (this should never print)");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"FATAL ERROR during startup: {ex.GetType().Name}: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    Log.Fatal(ex, "Application startup failed");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 // Make Program accessible to integration tests
 public partial class Program { }

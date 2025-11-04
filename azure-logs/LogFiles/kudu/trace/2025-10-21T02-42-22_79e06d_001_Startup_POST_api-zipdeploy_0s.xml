@@ -1,3 +1,0 @@
-<step title="Startup Request" date="2025-10-21T02:42:22.439" instance="79e06d" url="/api/zipdeploy?isAsync=true&amp;deployer=GITHUB_ZIP_DEPLOY&amp;message=%7B%22type%22%3A%22deployment%22%2C%22sha%22%3A%2256da87aede1edcba31db50cf79caf05f2ccf7740%22%2C%22repoName%22%3A%22punkouter26%2FPoVicTranslate%22%2C%22actor%22%3A%22punkouter26%22%2C%22slotName%22%3A%22production%22%2C%22commitMessage%22%3A%22Fix%20health%20endpoint%20routing%20-%20remove%20custom%20fallback%20middleware%20that%20was%20interfering%20with%20API%20routes%22%7D" method="POST" type="request" pid="2736,2,8" ScmType="None" >
-  <step title="Cleanup Xml Logs" date="2025-10-21T02:42:22.439" /><!-- duration: 16ms -->
-</step><!-- duration: 16ms -->
