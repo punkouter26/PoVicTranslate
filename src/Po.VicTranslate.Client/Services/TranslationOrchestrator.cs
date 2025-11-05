@@ -13,7 +13,6 @@ public interface ITranslationOrchestrator
     Task<bool> LoadSongAsync(TranslationViewModel viewModel, string songFileName);
     Task<bool> LoadRandomSongAsync(TranslationViewModel viewModel);
     Task<bool> TranslateTextAsync(TranslationViewModel viewModel);
-    Task<bool> SpeakTextAsync(TranslationViewModel viewModel);
     Task<bool> CopyToClipboardAsync(string text);
 }
 
@@ -21,18 +20,15 @@ public class TranslationOrchestrator : ITranslationOrchestrator
 {
     private readonly ClientTranslationService _translationService;
     private readonly ClientLyricsService _lyricsService;
-    private readonly ClientSpeechService _speechService;
     private readonly IJSRuntime _jsRuntime;
 
     public TranslationOrchestrator(
         ClientTranslationService translationService,
         ClientLyricsService lyricsService,
-        ClientSpeechService speechService,
         IJSRuntime jsRuntime)
     {
         _translationService = translationService;
         _lyricsService = lyricsService;
-        _speechService = speechService;
         _jsRuntime = jsRuntime;
     }
 
@@ -145,41 +141,6 @@ public class TranslationOrchestrator : ITranslationOrchestrator
         finally
         {
             viewModel.IsTranslating = false;
-        }
-    }
-
-    public async Task<bool> SpeakTextAsync(TranslationViewModel viewModel)
-    {
-        ArgumentNullException.ThrowIfNull(viewModel);
-        try
-        {
-            viewModel.ClearError();
-
-            if (string.IsNullOrWhiteSpace(viewModel.TranslatedText))
-            {
-                viewModel.ErrorMessage = "No translated text to read.";
-                return false;
-            }
-
-            viewModel.IsSpeaking = true;
-            var audioBytes = await _speechService.SynthesizeSpeechAsync(viewModel.TranslatedText);
-            await _jsRuntime.InvokeVoidAsync("playAudio", audioBytes);
-
-            return true;
-        }
-        catch (HttpRequestException ex)
-        {
-            viewModel.ErrorMessage = $"Text-to-speech service unavailable: {ex.Message}";
-            return false;
-        }
-        catch (Exception ex)
-        {
-            viewModel.ErrorMessage = $"Text-to-speech error: {ex.Message}";
-            return false;
-        }
-        finally
-        {
-            viewModel.IsSpeaking = false;
         }
     }
 

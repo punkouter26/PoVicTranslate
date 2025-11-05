@@ -12,14 +12,12 @@ namespace VictorianTranslator.UnitTests.Controllers;
 public class LyricsControllerTests
 {
     private readonly Mock<ILyricsService> _mockLyricsService;
-    private readonly Mock<ILyricsManagementService> _mockManagementService;
     private readonly Mock<ILyricsUtilityService> _mockLyricsUtility;
     private readonly LyricsController _controller;
 
     public LyricsControllerTests()
     {
         _mockLyricsService = new Mock<ILyricsService>();
-        _mockManagementService = new Mock<ILyricsManagementService>();
         _mockLyricsUtility = new Mock<ILyricsUtilityService>();
         
         // Setup default behavior for LimitWords to pass through
@@ -29,7 +27,6 @@ public class LyricsControllerTests
         
         _controller = new LyricsController(
             _mockLyricsService.Object,
-            _mockManagementService.Object,
             _mockLyricsUtility.Object);
     }
 
@@ -37,19 +34,11 @@ public class LyricsControllerTests
     public async Task GetAvailableSongs_ShouldReturnSongList()
     {
         // Arrange
-        var collection = new LyricsCollection
-        {
-            Version = "1.0",
-            Songs = new List<Song>
-            {
-                new() { Id = "1", Title = "Song 1", Artist = "Artist 1", Album = "Album 1", Genre = "Rock", Content = "Lyrics 1" },
-                new() { Id = "2", Title = "Song 2", Artist = "Artist 2", Album = "Album 2", Genre = "Pop", Content = "Lyrics 2" }
-            }
-        };
+        var songIds = new List<string> { "song1", "song2" };
 
-        _mockManagementService
-            .Setup(x => x.LoadLyricsCollectionAsync())
-            .ReturnsAsync(collection);
+        _mockLyricsService
+            .Setup(x => x.GetAvailableSongsAsync())
+            .ReturnsAsync(songIds);
 
         // Act
         var result = await _controller.GetAvailableSongs();
@@ -57,77 +46,42 @@ public class LyricsControllerTests
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
-        okResult!.Value.Should().NotBeNull();
+        okResult!.Value.Should().BeEquivalentTo(songIds);
     }
 
     [Fact]
     public async Task GetLyrics_WithValidId_ShouldReturnLyrics()
     {
         // Arrange
-        const string songId = "test-song";
-        var song = new Song
-        {
-            Id = songId,
-            Title = "Test Song",
-            Artist = "Test Artist",
-            Album = "Test Album",
-            Genre = "Test",
-            Content = "Test lyrics content"
-        };
+        const string songFileName = "test-song";
+        const string lyrics = "Test lyrics content with many words to test limiting functionality here";
 
-        _mockManagementService
-            .Setup(x => x.GetSongByIdAsync(songId))
-            .ReturnsAsync(song);
+        _mockLyricsService
+            .Setup(x => x.GetLyricsAsync(songFileName))
+            .ReturnsAsync(lyrics);
 
         // Act
-        var result = await _controller.GetLyrics(songId);
+        var result = await _controller.GetLyrics(songFileName);
 
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
-        okResult!.Value.Should().Be("Test lyrics content");
+        okResult!.Value.Should().Be(lyrics);
+        _mockLyricsUtility.Verify(x => x.LimitWords(lyrics, 200), Times.Once);
     }
 
     [Fact]
-    public async Task GetLyrics_WithInvalidId_FallsBackToOldService()
+    public async Task GetLyrics_WithInvalidId_ShouldReturnNotFound()
     {
         // Arrange
-        const string songId = "invalid-song";
-        const string fallbackLyrics = "Fallback lyrics";
-
-        _mockManagementService
-            .Setup(x => x.GetSongByIdAsync(songId))
-            .ReturnsAsync((Song?)null);
+        const string songFileName = "invalid-song";
 
         _mockLyricsService
-            .Setup(x => x.GetLyricsAsync(songId))
-            .ReturnsAsync(fallbackLyrics);
-
-        // Act
-        var result = await _controller.GetLyrics(songId);
-
-        // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
-        var okResult = result.Result as OkObjectResult;
-        okResult!.Value.Should().Be(fallbackLyrics);
-    }
-
-    [Fact]
-    public async Task GetLyrics_WhenBothFail_ShouldReturnNotFound()
-    {
-        // Arrange
-        const string songId = "missing-song";
-
-        _mockManagementService
-            .Setup(x => x.GetSongByIdAsync(songId))
-            .ReturnsAsync((Song?)null);
-
-        _mockLyricsService
-            .Setup(x => x.GetLyricsAsync(songId))
+            .Setup(x => x.GetLyricsAsync(songFileName))
             .ReturnsAsync((string)null!);
 
         // Act
-        var result = await _controller.GetLyrics(songId);
+        var result = await _controller.GetLyrics(songFileName);
 
         // Assert
         result.Result.Should().BeOfType<NotFoundResult>();

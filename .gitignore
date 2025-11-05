@@ -86,7 +86,15 @@ tests/Po.VicTranslate.E2ETests/playwright-report/
 
 # Azurite local storage
 __azurite_db_*.json
+__blobstorage__/
+__queuestorage__/
 
 # Debug logs and reports
 src/DEBUG/logs/
 src/DEBUG/reports/
+
+# Temporary files
+app-output.log
+*.png
+run-app.ps1
+

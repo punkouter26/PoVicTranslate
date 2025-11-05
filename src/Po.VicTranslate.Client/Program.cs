@@ -23,12 +23,10 @@ builder.Services.AddScoped(sp =>
 });
 builder.Services.AddScoped<ClientTranslationService>();
 builder.Services.AddScoped<ClientLyricsService>();
-builder.Services.AddScoped<ClientSpeechService>();
 builder.Services.AddScoped<ITranslationOrchestrator, TranslationOrchestrator>();
 
 // Phase 1 UI/UX Enhancement Services
 builder.Services.AddScoped<HistoryService>();
-builder.Services.AddScoped<ThemeService>();
 builder.Services.AddScoped<FuzzyMatchService>();
 
 await builder.Build().RunAsync();

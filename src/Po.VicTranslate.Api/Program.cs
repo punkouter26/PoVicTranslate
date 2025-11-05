@@ -2,7 +2,6 @@ using Po.VicTranslate.Api.Configuration;
 using Po.VicTranslate.Api.Services;
 using Po.VicTranslate.Api.Middleware;
 using Po.VicTranslate.Api.HealthChecks;
-using Po.VicTranslate.Api.BackgroundServices;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
@@ -132,29 +131,11 @@ builder.Services.AddScoped<Po.VicTranslate.Api.Services.Validation.IDiagnosticVa
 builder.Services.AddScoped<IConfigurationValidator, ConfigurationValidator>();
 
 builder.Services.AddScoped<IDiagnosticService, DiagnosticService>();
-builder.Services.AddSingleton<ILyricsManagementService, LyricsManagementService>();
 
 // Phase 7: DRY Refactoring - Lyrics Utility Service
 builder.Services.AddSingleton<Po.VicTranslate.Api.Services.Lyrics.ILyricsUtilityService, Po.VicTranslate.Api.Services.Lyrics.LyricsUtilityService>();
 
-builder.Services.AddSingleton<IDebugLogService, DebugLogService>(); // Add Debug Log Service as singleton
 builder.Services.AddSingleton<ICustomTelemetryService, CustomTelemetryService>(); // Phase 4: Custom telemetry
-
-// Phase 2 Refactoring: Browser Log Strategies (Strategy Pattern)
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.EventLogStrategy>();
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.InstabilityLogStrategy>();
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.FailureLogStrategy>();
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.UnknownLogStrategy>();
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.BrowserLogStrategyFactory>();
-
-// Phase 2 Refactoring: Client Log Handlers (Chain of Responsibility Pattern)
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.IClientLogHandler, Po.VicTranslate.Api.Services.ClientLog.ErrorLogHandler>();
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.IClientLogHandler, Po.VicTranslate.Api.Services.ClientLog.WarningLogHandler>();
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.IClientLogHandler, Po.VicTranslate.Api.Services.ClientLog.InfoLogHandler>();
-builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.ClientLogHandlerFactory>();
-
-// Phase 10: Background Services - Automatic Debug Log Cleanup
-builder.Services.AddHostedService<Po.VicTranslate.Api.BackgroundServices.DebugLogCleanupService>();
 
 // Add CORS policy
 builder.Services.AddCors(options =>
@@ -194,7 +175,6 @@ else
 }
 
 app.UseCors(); // Always use CORS
-app.UseMiddleware<DebugLoggingMiddleware>(); // Add debug logging middleware
 app.UseMiddleware<ApiResponseTimeMiddleware>(); // Track API response times for Application Insights
 
 // Only use HTTPS redirection if not explicitly disabled (for E2E tests)

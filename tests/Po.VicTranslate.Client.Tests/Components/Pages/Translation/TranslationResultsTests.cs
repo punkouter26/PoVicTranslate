@@ -82,6 +82,6 @@ public class TranslationResultsTests : TestContext
 
         // Assert
         var label = cut.Find(".results-label");
-        label.TextContent.Should().Contain("Audio plays automatically");
+        label.TextContent.Should().Contain("Translation");
     }
 }

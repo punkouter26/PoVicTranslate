@@ -1,7 +1,5 @@
 @namespace VictorianTranslator.Client.Components.Layout
 @inherits LayoutComponentBase
-@inject ThemeService ThemeService
-@implements IAsyncDisposable
 
 <div class="urban-page">
     <header class="urban-header">
@@ -9,9 +7,6 @@
             <div class="brand-section">
                 <h1 class="urban-brand">PoVicTranslate</h1>
                 <div class="tagline">Where Street Meets Elite</div>
-            </div>
-            <div class="header-actions">
-                <ThemeToggle />
             </div>
         </div>
         <div class="header-glow"></div>
@@ -44,15 +39,3 @@
     <a class="dismiss">🗙</a>
 </div>
 
-@code {
-    protected override async Task OnInitializedAsync()
-    {
-        await ThemeService.InitializeAsync();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        // Cleanup if needed
-        await ValueTask.CompletedTask;
-    }
-}

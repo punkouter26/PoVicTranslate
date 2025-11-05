@@ -32,7 +32,7 @@
                 OnRandomClick="@OnLoadRandomSongAsync" />
 
             <div class="section-divider">
-                <span class="divider-text">OR DROP YOUR OWN BARS</span>
+                <span class="divider-text">OR ENTER TEXT</span>
                 <div class="divider-line"></div>
             </div>
 
@@ -48,14 +48,14 @@
                 {
                     <div class="btn-content translating">
                         <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
-                        <span>Elevating your flow...</span>
+                        <span>Translating...</span>
                     </div>
                 }
                 else
                 {
                     <div class="btn-content">
                         <i class="fas fa-magic"></i>
-                        <span>Transform to Victorian</span>
+                        <span>Translate</span>
                     </div>
                 }
             </button>
@@ -129,7 +129,7 @@
             if (!string.IsNullOrWhiteSpace(_viewModel.TranslatedText))
             {
                 await HistoryService.AddItemAsync(_viewModel.InputText, _viewModel.TranslatedText);
-                _toast?.ShowMessage("Translation complete with audio!", ToastType.Success);
+                _toast?.ShowMessage("Done", ToastType.Success);
             }
         }
         catch (Exception ex)
@@ -144,12 +144,12 @@
         var success = await TranslationOrchestrator.CopyToClipboardAsync(_viewModel.TranslatedText);
         if (success)
         {
-            _toast?.ShowMessage("Copied to clipboard!", ToastType.Success);
+            _toast?.ShowMessage("Copied", ToastType.Success);
         }
         else
         {
             _viewModel.ErrorMessage = "Failed to copy text to clipboard";
-            _toast?.ShowMessage("Failed to copy to clipboard", ToastType.Error);
+            _toast?.ShowMessage("Copy failed", ToastType.Error);
         }
     }
 

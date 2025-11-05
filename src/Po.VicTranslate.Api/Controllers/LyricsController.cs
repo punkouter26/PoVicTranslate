@@ -15,22 +15,18 @@ namespace Po.VicTranslate.Api.Controllers;
 public class LyricsController : ControllerBase
 {
     private readonly ILyricsService _lyricsService;
-    private readonly ILyricsManagementService _lyricsManagement;
     private readonly ILyricsUtilityService _lyricsUtility;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LyricsController"/> class.
     /// </summary>
-    /// <param name="lyricsService">Service for retrieving song lyrics (legacy).</param>
-    /// <param name="lyricsManagement">Service for managing lyrics collection with caching.</param>
+    /// <param name="lyricsService">Service for retrieving song lyrics.</param>
     /// <param name="lyricsUtility">Utility service for lyrics operations.</param>
     public LyricsController(
         ILyricsService lyricsService,
-        ILyricsManagementService lyricsManagement,
         ILyricsUtilityService lyricsUtility)
     {
         _lyricsService = lyricsService;
-        _lyricsManagement = lyricsManagement;
         _lyricsUtility = lyricsUtility;
     }
 
@@ -43,10 +39,8 @@ public class LyricsController : ControllerBase
     [ProducesResponseType(typeof(List<string>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<string>>> GetAvailableSongs()
     {
-        // Use new management service for better performance and structure
-        var collection = await _lyricsManagement.LoadLyricsCollectionAsync();
-        var songTitles = collection.Songs.Select(s => s.Id).ToList();
-        return Ok(songTitles);
+        var songs = await _lyricsService.GetAvailableSongsAsync();
+        return Ok(songs);
     }
 
     /// <summary>
@@ -61,21 +55,14 @@ public class LyricsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<string>> GetLyrics(string songFileName)
     {
-        // Try new management service first
-        var song = await _lyricsManagement.GetSongByIdAsync(songFileName);
-        if (song != null)
-        {
-            // Limit to 200 words using shared utility service (DRY)
-            var limitedContent = _lyricsUtility.LimitWords(song.Content, 200);
-            return Ok(limitedContent);
-        }
-
-        // Fallback to original service for backward compatibility (already limits to 200 words)
         var lyrics = await _lyricsService.GetLyricsAsync(songFileName);
         if (lyrics == null)
         {
             return NotFound();
         }
-        return Ok(lyrics);
+        
+        // Limit to 200 words
+        var limitedLyrics = _lyricsUtility.LimitWords(lyrics, 200);
+        return Ok(limitedLyrics);
     }
 }
