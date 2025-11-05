@@ -13,6 +13,7 @@ namespace VictorianTranslator.UnitTests.Controllers;
 public class TranslationControllerTests
 {
     private readonly Mock<ITranslationService> _mockTranslationService;
+    private readonly Mock<IAudioSynthesisService> _mockAudioSynthesisService;
     private readonly Mock<ICustomTelemetryService> _mockTelemetryService;
     private readonly Mock<IInputValidator> _mockInputValidator;
     private readonly Mock<ILogger<TranslationController>> _mockLogger;
@@ -21,12 +22,14 @@ public class TranslationControllerTests
     public TranslationControllerTests()
     {
         _mockTranslationService = new Mock<ITranslationService>();
+        _mockAudioSynthesisService = new Mock<IAudioSynthesisService>();
         _mockTelemetryService = new Mock<ICustomTelemetryService>();
         _mockInputValidator = new Mock<IInputValidator>();
         _mockLogger = new Mock<ILogger<TranslationController>>();
         
         _controller = new TranslationController(
             _mockTranslationService.Object,
+            _mockAudioSynthesisService.Object,
             _mockTelemetryService.Object,
             _mockInputValidator.Object,
             _mockLogger.Object);

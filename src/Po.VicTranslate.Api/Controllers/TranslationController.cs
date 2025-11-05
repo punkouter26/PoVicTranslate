@@ -14,6 +14,7 @@ namespace Po.VicTranslate.Api.Controllers;
 public class TranslationController : ControllerBase
 {
     private readonly ITranslationService _translationService;
+    private readonly IAudioSynthesisService _audioSynthesisService;
     private readonly ICustomTelemetryService _telemetryService;
     private readonly IInputValidator _inputValidator;
     private readonly ILogger<TranslationController> _logger;
@@ -22,27 +23,30 @@ public class TranslationController : ControllerBase
     /// Initializes a new instance of the <see cref="TranslationController"/> class.
     /// </summary>
     /// <param name="translationService">Service for performing text translation.</param>
+    /// <param name="audioSynthesisService">Service for text-to-speech synthesis.</param>
     /// <param name="telemetryService">Service for tracking custom telemetry.</param>
     /// <param name="inputValidator">Service for validating and sanitizing user input.</param>
     /// <param name="logger">Logger for diagnostic information.</param>
     public TranslationController(
         ITranslationService translationService,
+        IAudioSynthesisService audioSynthesisService,
         ICustomTelemetryService telemetryService,
         IInputValidator inputValidator,
         ILogger<TranslationController> logger)
     {
         _translationService = translationService;
+        _audioSynthesisService = audioSynthesisService;
         _telemetryService = telemetryService;
         _inputValidator = inputValidator;
         _logger = logger;
     }
 
     /// <summary>
-    /// Translates modern English text to Victorian-era English.
+    /// Translates modern English text to Victorian-era English and generates audio.
     /// </summary>
     /// <param name="request">The translation request containing the text to translate.</param>
-    /// <returns>A <see cref="TranslationResponse"/> containing the translated text.</returns>
-    /// <response code="200">Returns the successfully translated text.</response>
+    /// <returns>A <see cref="TranslationResponse"/> containing the translated text and audio.</returns>
+    /// <response code="200">Returns the successfully translated text and audio.</response>
     /// <response code="400">If the request is invalid or validation fails.</response>
     [HttpPost]
     [ProducesResponseType(typeof(TranslationResponse), StatusCodes.Status200OK)]
@@ -68,6 +72,20 @@ public class TranslationController : ControllerBase
             _logger.LogInformation("Processing translation request: TextLength={Length}", sanitizedText.Length);
 
             var translatedText = await _translationService.TranslateToVictorianEnglishAsync(sanitizedText);
+            
+            // Automatically synthesize speech for the translated text
+            byte[]? audioData = null;
+            try
+            {
+                _logger.LogInformation("Synthesizing speech for translated text");
+                audioData = await _audioSynthesisService.SynthesizeSpeechAsync(translatedText);
+                _logger.LogInformation("Speech synthesis successful, audio size: {Size} bytes", audioData.Length);
+            }
+            catch (Exception audioEx)
+            {
+                // Don't fail the entire request if TTS fails
+                _logger.LogWarning(audioEx, "Speech synthesis failed, but translation succeeded");
+            }
 
             stopwatch.Stop();
 
@@ -80,7 +98,11 @@ public class TranslationController : ControllerBase
 
             _telemetryService.TrackUserActivity("Translation", userId: null);
 
-            return Ok(new TranslationResponse { TranslatedText = translatedText });
+            return Ok(new TranslationResponse 
+            { 
+                TranslatedText = translatedText,
+                AudioData = audioData
+            });
         }
         catch (Exception ex)
         {

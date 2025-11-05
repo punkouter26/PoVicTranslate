@@ -2,5 +2,6 @@ namespace Po.VicTranslate.Client.Models;
 
 public class TranslationResponse
 {
-    public string? TranslatedText { get; set; }
+    public required string TranslatedText { get; set; }
+    public byte[]? AudioData { get; set; }
 }

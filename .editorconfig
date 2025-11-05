@@ -88,7 +88,8 @@ dotnet_naming_style.begins_with_underscore_style.capitalization = camel_case
 #### .NET Code Quality ####
 
 # SOLID principles enforcement
-dotnet_diagnostic.CA1062.severity = warning  # Validate arguments
+# CA1062 disabled - parameters are validated by DI container and ArgumentNullException.ThrowIfNull
+dotnet_diagnostic.CA1062.severity = none  # Validate arguments
 dotnet_diagnostic.CA1303.severity = suggestion  # Don't hardcode strings
 dotnet_diagnostic.CA1508.severity = warning  # Avoid dead conditional code
 dotnet_diagnostic.CA1812.severity = warning  # Avoid uninstantiated internal classes

@@ -14,12 +14,12 @@ public class ClientTranslationService
         _httpClient = httpClient;
     }
 
-    public async Task<string?> TranslateText(string text)
+    public async Task<TranslationResponse> TranslateText(string text)
     {
         var request = new TranslationRequest { Text = text };
-        var response = await _httpClient.PostAsJsonAsync("Translation/translate", request);
+        var response = await _httpClient.PostAsJsonAsync("api/Translation", request);
         response.EnsureSuccessStatusCode();
         var translationResponse = await response.Content.ReadFromJsonAsync<TranslationResponse>();
-        return translationResponse?.TranslatedText;
+        return translationResponse ?? new TranslationResponse { TranslatedText = string.Empty };
     }
 }

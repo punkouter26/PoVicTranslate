@@ -69,7 +69,7 @@ public class SpeechController : ControllerBase
     /// <response code="200">Returns the audio file as application/octet-stream.</response>
     /// <response code="400">If the text is invalid or validation fails.</response>
     /// <response code="500">If speech synthesis fails.</response>
-    [HttpPost]
+    [HttpPost("synthesize")]
     [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]

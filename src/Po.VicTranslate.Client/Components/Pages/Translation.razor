@@ -66,14 +66,11 @@
             <TranslationResults 
                 TranslatedText="@_viewModel.TranslatedText"
                 IsEditMode="@_viewModel.IsEditMode"
-                IsSpeaking="@_viewModel.IsSpeaking"
-                CanSpeak="@_viewModel.CanSpeak"
                 OnCopyClick="@OnCopyToClipboardAsync"
                 OnEnterEdit="@(() => _viewModel.EnterEditMode())"
                 OnSaveEdit="@OnSaveEditAsync"
                 OnCancelEdit="@(() => _viewModel.CancelEdit())"
-                OnRetranslate="@OnRetranslateAsync"
-                OnSpeakClick="@OnSpeakTextAsync" />
+                OnRetranslate="@OnRetranslateAsync" />
         }
 
         @if (!string.IsNullOrEmpty(_viewModel.ErrorMessage))
@@ -132,7 +129,7 @@
             if (!string.IsNullOrWhiteSpace(_viewModel.TranslatedText))
             {
                 await HistoryService.AddItemAsync(_viewModel.InputText, _viewModel.TranslatedText);
-                _toast?.ShowMessage("Translation complete!", ToastType.Success);
+                _toast?.ShowMessage("Translation complete with audio!", ToastType.Success);
             }
         }
         catch (Exception ex)
@@ -140,11 +137,6 @@
             _viewModel.ErrorMessage = ex.Message;
             _toast?.ShowMessage($"Translation failed: {ex.Message}", ToastType.Error);
         }
-    }
-
-    private async Task OnSpeakTextAsync()
-    {
-        await TranslationOrchestrator.SpeakTextAsync(_viewModel);
     }
 
     private async Task OnCopyToClipboardAsync()

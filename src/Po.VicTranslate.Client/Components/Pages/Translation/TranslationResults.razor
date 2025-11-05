@@ -2,6 +2,7 @@
     <label class="urban-label results-label">
         <i class="fas fa-scroll"></i>
         Victorian Translation
+        <span class="audio-hint">🔊 Audio plays automatically</span>
     </label>
     
     <div class="result-card">
@@ -19,31 +20,6 @@
             OnRetranslateRequested="@OnRetranslateAsync"
         />
     </div>
-    
-    <div class="audio-section">
-        <button class="urban-btn speech-btn" 
-                @onclick="OnSpeakClickAsync" 
-                disabled="@(!CanSpeak)">
-            @if (IsSpeaking)
-            {
-                <div class="btn-content speaking">
-                    <div class="audio-visualizer">
-                        <div class="bar"></div>
-                        <div class="bar"></div>
-                        <div class="bar"></div>
-                    </div>
-                    <span>Speaking with proper accent...</span>
-                </div>
-            }
-            else
-            {
-                <div class="btn-content">
-                    <i class="fas fa-volume-up"></i>
-                    <span>Hear It Spoken</span>
-                </div>
-            }
-        </button>
-    </div>
 </div>
 
 @code {
@@ -52,12 +28,6 @@
 
     [Parameter]
     public bool IsEditMode { get; set; }
-
-    [Parameter]
-    public bool IsSpeaking { get; set; }
-
-    [Parameter]
-    public bool CanSpeak { get; set; }
 
     [Parameter, EditorRequired]
     public EventCallback OnCopyClick { get; set; }
@@ -74,9 +44,6 @@
     [Parameter, EditorRequired]
     public EventCallback OnRetranslate { get; set; }
 
-    [Parameter, EditorRequired]
-    public EventCallback OnSpeakClick { get; set; }
-
     private async Task OnCopyClickAsync()
     {
         await OnCopyClick.InvokeAsync();
@@ -90,10 +57,5 @@
     private async Task OnRetranslateAsync()
     {
         await OnRetranslate.InvokeAsync();
-    }
-
-    private async Task OnSpeakClickAsync()
-    {
-        await OnSpeakClick.InvokeAsync();
     }
 }

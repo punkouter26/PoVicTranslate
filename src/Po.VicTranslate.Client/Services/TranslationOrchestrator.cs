@@ -117,8 +117,22 @@ public class TranslationOrchestrator : ITranslationOrchestrator
             }
 
             viewModel.IsTranslating = true;
-            var translatedText = await _translationService.TranslateText(viewModel.InputText);
-            viewModel.TranslatedText = translatedText ?? string.Empty;
+            var response = await _translationService.TranslateText(viewModel.InputText);
+            viewModel.TranslatedText = response.TranslatedText ?? string.Empty;
+            
+            // Automatically play audio if available
+            if (response.AudioData != null && response.AudioData.Length > 0)
+            {
+                try
+                {
+                    await _jsRuntime.InvokeVoidAsync("playAudio", response.AudioData);
+                }
+                catch (Exception ex)
+                {
+                    // Don't fail the translation if audio playback fails
+                    System.Diagnostics.Debug.WriteLine($"Audio playback failed: {ex.Message}");
+                }
+            }
 
             return true;
         }
