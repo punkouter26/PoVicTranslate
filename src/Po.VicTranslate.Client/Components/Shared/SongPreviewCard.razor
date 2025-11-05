@@ -1,0 +1,39 @@
+@namespace Po.VicTranslate.Client.Components.Shared
+@using Po.VicTranslate.Client.Models
+
+@if (SongPreview != null)
+{
+    <div class="song-preview-card animate-slide-up">
+        <div class="preview-header">
+            <i class="fas fa-music"></i>
+            <span>Random Pick</span>
+        </div>
+        <h3 class="preview-title">@SongPreview.Title</h3>
+        @if (!string.IsNullOrEmpty(SongPreview.Artist))
+        {
+            <div class="preview-artist">@SongPreview.Artist</div>
+        }
+        <div class="preview-snippet">@SongPreview.Snippet</div>
+        <div class="preview-actions">
+            <button class="btn-use-song" @onclick="OnAccept">
+                <i class="fas fa-check"></i>
+                <span>Use This</span>
+            </button>
+            <button class="btn-another-song" @onclick="OnReject">
+                <i class="fas fa-random"></i>
+                <span>Another One</span>
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public SongPreviewModel? SongPreview { get; set; }
+
+    [Parameter]
+    public EventCallback OnAccept { get; set; }
+
+    [Parameter]
+    public EventCallback OnReject { get; set; }
+}

@@ -1,0 +1,42 @@
+/* Theme Toggle Styles */
+
+.theme-toggle {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #ffd700;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
+    transform: rotate(20deg) scale(1.1);
+}
+
+.theme-toggle:active {
+    transform: rotate(20deg) scale(1.05);
+}
+
+.theme-toggle:focus {
+    outline: 2px solid #ffd700;
+    outline-offset: 4px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .theme-toggle {
+        transition-duration: 0.01ms !important;
+    }
+    
+    .theme-toggle:hover {
+        transform: none !important;
+    }
+}

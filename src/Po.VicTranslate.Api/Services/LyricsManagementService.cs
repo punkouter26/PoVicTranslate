@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Po.VicTranslate.Api.Models;
+using Po.VicTranslate.Api.Services.Caching;
+using Po.VicTranslate.Api.Services.Lyrics;
 
 namespace Po.VicTranslate.Api.Services;
 
@@ -17,50 +19,55 @@ public interface ILyricsManagementService
 public class LyricsManagementService : ILyricsManagementService
 {
     private readonly ILogger<LyricsManagementService> _logger;
+    private readonly ICacheService _cacheService;
     private readonly string _lyricsDataPath;
     private readonly string _scrapesPath;
-    private LyricsCollection? _cachedCollection;
     private readonly SemaphoreSlim _loadSemaphore = new(1, 1);
 
-    public LyricsManagementService(ILogger<LyricsManagementService> logger, IWebHostEnvironment environment)
+    public LyricsManagementService(
+        ILogger<LyricsManagementService> logger, 
+        IWebHostEnvironment environment,
+        ICacheService cacheService)
     {
         ArgumentNullException.ThrowIfNull(environment);
         _logger = logger;
+        _cacheService = cacheService;
         _lyricsDataPath = Path.Combine(environment.ContentRootPath, "Data", "lyrics-collection.json");
         _scrapesPath = Path.Combine(environment.ContentRootPath, "..", "scrapes");
     }
 
     public async Task<LyricsCollection> LoadLyricsCollectionAsync()
     {
-        await _loadSemaphore.WaitAsync();
-        try
-        {
-            if (_cachedCollection != null)
+        return await _cacheService.GetOrCreateAsync(
+            CacheKeys.LyricsCollection,
+            async () =>
             {
-                return _cachedCollection;
-            }
+                await _loadSemaphore.WaitAsync();
+                try
+                {
+                    if (!File.Exists(_lyricsDataPath))
+                    {
+                        _logger.LogInformation("Lyrics collection not found, generating from text files...");
+                        await RegenerateLyricsCollectionInternalAsync();
+                    }
 
-            if (!File.Exists(_lyricsDataPath))
-            {
-                _logger.LogInformation("Lyrics collection not found, generating from text files...");
-                await RegenerateLyricsCollectionAsync();
-            }
+                    var jsonContent = await File.ReadAllTextAsync(_lyricsDataPath);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+                    var collection = JsonSerializer.Deserialize<LyricsCollection>(jsonContent, options)
+                        ?? throw new InvalidOperationException("Failed to deserialize lyrics collection");
 
-            var jsonContent = await File.ReadAllTextAsync(_lyricsDataPath);
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-            _cachedCollection = JsonSerializer.Deserialize<LyricsCollection>(jsonContent, options)
-                ?? throw new InvalidOperationException("Failed to deserialize lyrics collection");
-
-            _logger.LogInformation("Loaded lyrics collection with {SongCount} songs", _cachedCollection.TotalSongs);
-            return _cachedCollection;
-        }
-        finally
-        {
-            _loadSemaphore.Release();
-        }
+                    _logger.LogInformation("Loaded lyrics collection with {SongCount} songs", collection.TotalSongs);
+                    return collection;
+                }
+                finally
+                {
+                    _loadSemaphore.Release();
+                }
+            },
+            absoluteExpiration: TimeSpan.FromHours(24)); // Cache for 24 hours
     }
 
     public async Task<List<Song>> SearchLyricsAsync(string query, int maxResults = 10)
@@ -94,23 +101,51 @@ public class LyricsManagementService : ILyricsManagementService
 
     public async Task<Song?> GetSongByIdAsync(string id)
     {
-        var collection = await LoadLyricsCollectionAsync();
-        return collection.Songs.FirstOrDefault(s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+        var cacheKey = CacheKeys.GetSongKey(id);
+        return await _cacheService.GetOrCreateAsync(
+            cacheKey,
+            async () =>
+            {
+                var collection = await LoadLyricsCollectionAsync();
+                return collection.Songs.FirstOrDefault(s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+            },
+            absoluteExpiration: TimeSpan.FromHours(24));
     }
 
     public async Task<List<string>> GetAvailableArtistsAsync()
     {
-        var collection = await LoadLyricsCollectionAsync();
-        return collection.Artists.Values.Distinct().OrderBy(x => x).ToList();
+        return await _cacheService.GetOrCreateAsync(
+            CacheKeys.AvailableArtists,
+            async () =>
+            {
+                var collection = await LoadLyricsCollectionAsync();
+                return collection.Artists.Values.Distinct().OrderBy(x => x).ToList();
+            },
+            absoluteExpiration: TimeSpan.FromHours(24));
     }
 
     public async Task<List<string>> GetAvailableAlbumsAsync()
     {
-        var collection = await LoadLyricsCollectionAsync();
-        return collection.Albums.Values.Distinct().OrderBy(x => x).ToList();
+        return await _cacheService.GetOrCreateAsync(
+            CacheKeys.AvailableAlbums,
+            async () =>
+            {
+                var collection = await LoadLyricsCollectionAsync();
+                return collection.Albums.Values.Distinct().OrderBy(x => x).ToList();
+            },
+            absoluteExpiration: TimeSpan.FromHours(24));
     }
 
     public async Task RegenerateLyricsCollectionAsync()
+    {
+        await RegenerateLyricsCollectionInternalAsync();
+        
+        // Invalidate all lyrics-related cache entries
+        _cacheService.RemoveByPrefix("lyrics:");
+        _logger.LogInformation("Invalidated all lyrics cache entries after regeneration");
+    }
+
+    private async Task RegenerateLyricsCollectionInternalAsync()
     {
         _logger.LogInformation("Starting lyrics collection regeneration...");
 
@@ -172,7 +207,6 @@ public class LyricsManagementService : ILyricsManagementService
         var jsonContent = JsonSerializer.Serialize(collection, options);
         await File.WriteAllTextAsync(_lyricsDataPath, jsonContent);
 
-        _cachedCollection = collection;
         _logger.LogInformation("Generated lyrics collection with {SongCount} songs", collection.TotalSongs);
     }
 
@@ -269,40 +303,21 @@ public class LyricsManagementService : ILyricsManagementService
         return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(title.ToLowerInvariant());
     }
 
+    /// <summary>
+    /// Generates tags for a song using the Builder pattern.
+    /// Complexity reduced from 16 to ~4 by extracting tag generation logic into composable steps.
+    /// </summary>
     private static List<string> GenerateTags(string fileName, string content)
     {
-        var tags = new List<string> { "hip-hop", "wu-tang" };
-
-        var fileNameLower = fileName.ToLowerInvariant();
-        var contentLower = content.ToLowerInvariant();
-
-        // Add tags based on content analysis
-        if (contentLower.Contains("shaolin") || contentLower.Contains("kung fu"))
-        {
-            tags.Add("martial-arts");
-        }
-
-        if (contentLower.Contains("chamber"))
-        {
-            tags.Add("36-chambers");
-        }
-
-        if (fileNameLower.Contains("remix"))
-        {
-            tags.Add("remix");
-        }
-
-        if (fileNameLower.Contains("intro") || fileNameLower.Contains("outro"))
-        {
-            tags.Add("interlude");
-        }
-
-        if (contentLower.Contains("cream") || contentLower.Contains("cash rules"))
-        {
-            tags.Add("classic");
-        }
-
-        return tags.Distinct().ToList();
+        return new SongTagsBuilder()
+            .WithFileName(fileName)
+            .WithContent(content)
+            .AddBaseTags()
+            .AddMartialArtsTags()
+            .AddAlbumTags()
+            .AddFormatTags()
+            .AddClassicTags()
+            .Build();
     }
 
     private static string GenerateDescription(string title, string artist, int wordCount)

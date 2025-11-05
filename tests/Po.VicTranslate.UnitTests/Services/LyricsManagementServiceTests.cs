@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Po.VicTranslate.Api.Models;
 using Po.VicTranslate.Api.Services;
+using Po.VicTranslate.Api.Services.Caching;
 using Xunit;
 
 namespace VictorianTranslator.UnitTests.Services;
@@ -13,6 +14,7 @@ public class LyricsManagementServiceTests : IDisposable
 {
     private readonly Mock<ILogger<LyricsManagementService>> _mockLogger;
     private readonly Mock<IWebHostEnvironment> _mockEnvironment;
+    private readonly Mock<ICacheService> _mockCacheService;
     private readonly string _tempDataPath;
     private readonly string _tempContentRoot;
     private LyricsManagementService? _service;
@@ -21,6 +23,7 @@ public class LyricsManagementServiceTests : IDisposable
     {
         _mockLogger = new Mock<ILogger<LyricsManagementService>>();
         _mockEnvironment = new Mock<IWebHostEnvironment>();
+        _mockCacheService = new Mock<ICacheService>();
 
         // Create a temp directory for testing
         _tempContentRoot = Path.Combine(Path.GetTempPath(), $"LyricsTests_{Guid.NewGuid()}");
@@ -28,6 +31,31 @@ public class LyricsManagementServiceTests : IDisposable
         Directory.CreateDirectory(_tempDataPath);
 
         _mockEnvironment.Setup(x => x.ContentRootPath).Returns(_tempContentRoot);
+
+        // Setup cache service to execute the factory function directly (pass-through behavior)
+        _mockCacheService
+            .Setup(x => x.GetOrCreateAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<LyricsCollection>>>(),
+                It.IsAny<TimeSpan?>()))
+            .Returns<string, Func<Task<LyricsCollection>>, TimeSpan?>(
+                (key, factory, expiration) => factory());
+
+        _mockCacheService
+            .Setup(x => x.GetOrCreateAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<Song?>>>(),
+                It.IsAny<TimeSpan?>()))
+            .Returns<string, Func<Task<Song?>>, TimeSpan?>(
+                (key, factory, expiration) => factory());
+
+        _mockCacheService
+            .Setup(x => x.GetOrCreateAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<List<string>>>>(),
+                It.IsAny<TimeSpan?>()))
+            .Returns<string, Func<Task<List<string>>>, TimeSpan?>(
+                (key, factory, expiration) => factory());
 
         // Create test data file
         var testCollection = new LyricsCollection
@@ -73,7 +101,7 @@ public class LyricsManagementServiceTests : IDisposable
             Path.Combine(_tempDataPath, "lyrics-collection.json"),
             JsonSerializer.Serialize(testCollection, jsonOptions));
 
-        _service = new LyricsManagementService(_mockLogger.Object, _mockEnvironment.Object);
+        _service = new LyricsManagementService(_mockLogger.Object, _mockEnvironment.Object, _mockCacheService.Object);
     }
 
     [Fact]
@@ -90,14 +118,24 @@ public class LyricsManagementServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task LoadLyricsCollectionAsync_ShouldCacheResult()
+    public async Task LoadLyricsCollectionAsync_ShouldUseCache()
     {
         // Act
         var result1 = await _service!.LoadLyricsCollectionAsync();
         var result2 = await _service.LoadLyricsCollectionAsync();
 
-        // Assert
-        result1.Should().BeSameAs(result2);
+        // Assert - Verify cache service was called
+        _mockCacheService.Verify(
+            x => x.GetOrCreateAsync(
+                It.Is<string>(key => key == "lyrics:collection"),
+                It.IsAny<Func<Task<LyricsCollection>>>(),
+                It.IsAny<TimeSpan?>()),
+            Times.AtLeastOnce);
+        
+        // Both results should have the same data (even if different instances)
+        result1.Should().NotBeNull();
+        result2.Should().NotBeNull();
+        result1.TotalSongs.Should().Be(result2.TotalSongs);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using Po.VicTranslate.Api.Configuration;
 using Po.VicTranslate.Api.Services;
 using Po.VicTranslate.Api.Middleware;
 using Po.VicTranslate.Api.HealthChecks;
+using Po.VicTranslate.Api.BackgroundServices;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using System.Text.Json;
@@ -105,6 +106,10 @@ builder.Services.AddSwaggerGen(); // Add Swagger generation
 // Add Blazor WebAssembly hosting services
 builder.Services.AddRazorPages();
 
+// Phase 8: Performance Optimization - Memory Caching
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.Caching.ICacheService, Po.VicTranslate.Api.Services.Caching.CacheService>();
+
 // Configure API Settings
 builder.Services.Configure<ApiSettings>(
     builder.Configuration.GetSection("ApiSettings"));
@@ -112,12 +117,44 @@ builder.Services.Configure<ApiSettings>(
 // Register Services
 builder.Services.AddScoped<ITranslationService, TranslationService>();
 builder.Services.AddScoped<ILyricsService, LyricsService>();
+
+// Phase 6: SOLID Refactoring - Speech Config Validator (SRP)
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.Validation.ISpeechConfigValidator, Po.VicTranslate.Api.Services.Validation.SpeechConfigValidator>();
 builder.Services.AddScoped<IAudioSynthesisService, AudioSynthesisService>();
+
+// Phase 9: Security - Input Validation and Sanitization
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.Validation.IInputValidator, Po.VicTranslate.Api.Services.Validation.InputValidator>();
+
+// Phase 6: SOLID Refactoring - Diagnostic Validators (SRP)
+builder.Services.AddScoped<Po.VicTranslate.Api.Services.Validation.IDiagnosticValidator, Po.VicTranslate.Api.Services.Validation.AzureOpenAIDiagnosticValidator>();
+builder.Services.AddScoped<Po.VicTranslate.Api.Services.Validation.IDiagnosticValidator, Po.VicTranslate.Api.Services.Validation.AzureSpeechDiagnosticValidator>();
+builder.Services.AddScoped<Po.VicTranslate.Api.Services.Validation.IDiagnosticValidator, Po.VicTranslate.Api.Services.Validation.InternetConnectivityDiagnosticValidator>();
 builder.Services.AddScoped<IConfigurationValidator, ConfigurationValidator>();
+
 builder.Services.AddScoped<IDiagnosticService, DiagnosticService>();
-builder.Services.AddScoped<ILyricsManagementService, LyricsManagementService>();
+builder.Services.AddSingleton<ILyricsManagementService, LyricsManagementService>();
+
+// Phase 7: DRY Refactoring - Lyrics Utility Service
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.Lyrics.ILyricsUtilityService, Po.VicTranslate.Api.Services.Lyrics.LyricsUtilityService>();
+
 builder.Services.AddSingleton<IDebugLogService, DebugLogService>(); // Add Debug Log Service as singleton
 builder.Services.AddSingleton<ICustomTelemetryService, CustomTelemetryService>(); // Phase 4: Custom telemetry
+
+// Phase 2 Refactoring: Browser Log Strategies (Strategy Pattern)
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.EventLogStrategy>();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.InstabilityLogStrategy>();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.FailureLogStrategy>();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.IBrowserLogStrategy, Po.VicTranslate.Api.Services.BrowserLog.UnknownLogStrategy>();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.BrowserLog.BrowserLogStrategyFactory>();
+
+// Phase 2 Refactoring: Client Log Handlers (Chain of Responsibility Pattern)
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.IClientLogHandler, Po.VicTranslate.Api.Services.ClientLog.ErrorLogHandler>();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.IClientLogHandler, Po.VicTranslate.Api.Services.ClientLog.WarningLogHandler>();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.IClientLogHandler, Po.VicTranslate.Api.Services.ClientLog.InfoLogHandler>();
+builder.Services.AddSingleton<Po.VicTranslate.Api.Services.ClientLog.ClientLogHandlerFactory>();
+
+// Phase 10: Background Services - Automatic Debug Log Cleanup
+builder.Services.AddHostedService<Po.VicTranslate.Api.BackgroundServices.DebugLogCleanupService>();
 
 // Add CORS policy
 builder.Services.AddCors(options =>
@@ -158,6 +195,7 @@ else
 
 app.UseCors(); // Always use CORS
 app.UseMiddleware<DebugLoggingMiddleware>(); // Add debug logging middleware
+app.UseMiddleware<ApiResponseTimeMiddleware>(); // Track API response times for Application Insights
 
 // Only use HTTPS redirection if not explicitly disabled (for E2E tests)
 if (!httpOnlyMode)
@@ -251,6 +289,19 @@ app.MapRazorPages();
 app.MapFallbackToFile("index.html");
 
     Console.WriteLine("DEBUG: About to call app.Run()...");
+    
+    // Register shutdown handler to see why app is stopping
+    var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+    lifetime.ApplicationStopping.Register(() =>
+    {
+        Console.WriteLine("DEBUG: ApplicationStopping event triggered!");
+        Console.WriteLine($"DEBUG: Stack trace: {Environment.StackTrace}");
+    });
+    lifetime.ApplicationStopped.Register(() =>
+    {
+        Console.WriteLine("DEBUG: ApplicationStopped event triggered!");
+    });
+    
     app.Run();
     Console.WriteLine("DEBUG: app.Run() completed (this should never print)");
 }

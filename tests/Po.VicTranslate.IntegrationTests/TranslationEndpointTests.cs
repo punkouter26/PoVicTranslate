@@ -28,7 +28,7 @@ public class TranslationEndpointTests : IClassFixture<WebApplicationFactory<Prog
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/Translation/translate", request, cancellationToken: TestContext.Current.CancellationToken);
+        var response = await _client.PostAsJsonAsync("/api/Translation", request, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -49,7 +49,7 @@ public class TranslationEndpointTests : IClassFixture<WebApplicationFactory<Prog
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/Translation/translate", request, cancellationToken: TestContext.Current.CancellationToken);
+        var response = await _client.PostAsJsonAsync("/api/Translation", request, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -66,7 +66,7 @@ public class TranslationEndpointTests : IClassFixture<WebApplicationFactory<Prog
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/Translation/translate", request, cancellationToken: TestContext.Current.CancellationToken);
+        var response = await _client.PostAsJsonAsync("/api/Translation", request, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.RequestTimeout);

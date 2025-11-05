@@ -35,13 +35,9 @@ export default defineConfig({
 
   // Web server configuration - starts the app before tests
   webServer: {
-    command: 'dotnet run --project ../../src/Po.VicTranslate.Api/Po.VicTranslate.Api.csproj --launch-profile http',
+    command: 'dotnet run --project ../../src/Po.VicTranslate.Api/Po.VicTranslate.Api.csproj --launch-profile e2e',
     url: 'http://localhost:5002/api/health/live', // Use different port
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes to start
-    env: {
-      'ASPNETCORE_URLS': 'http://localhost:5002',
-      'DISABLE_HTTPS_REDIRECTION': 'true'
-    }
   },
 });

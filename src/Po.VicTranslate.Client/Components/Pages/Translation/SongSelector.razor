@@ -1,0 +1,46 @@
+<AccordionSection Title="🎵 Choose Your Track" IsExpanded="true">
+    <div class="song-selector-wrapper">
+        <div class="song-controls">
+            <select id="songSelect" 
+                    class="form-select urban-select" 
+                    @onchange="OnSongSelectedAsync">
+                <option value="">-- Drop that beat, select a Wu-Tang classic --</option>
+                @foreach (var song in AvailableSongs)
+                {
+                    <option value="@song">@song.Replace(".txt", "").Replace("_", " ").ToTitleCase()</option>
+                }
+            </select>
+            <button class="urban-btn urban-btn-secondary shuffle-btn" 
+                    @onclick="OnRandomClickAsync" 
+                    disabled="@(!AvailableSongs.Any())">
+                <i class="fas fa-random"></i>
+                <span>Random</span>
+            </button>
+        </div>
+    </div>
+</AccordionSection>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<string> AvailableSongs { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public EventCallback<string> OnSongSelected { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnRandomClick { get; set; }
+
+    private async Task OnSongSelectedAsync(ChangeEventArgs e)
+    {
+        var selectedSong = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(selectedSong))
+        {
+            await OnSongSelected.InvokeAsync(selectedSong);
+        }
+    }
+
+    private async Task OnRandomClickAsync()
+    {
+        await OnRandomClick.InvokeAsync();
+    }
+}

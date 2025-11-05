@@ -2,6 +2,7 @@ using Microsoft.CognitiveServices.Speech;
 using Microsoft.Extensions.Options;
 using Po.VicTranslate.Api.Configuration;
 using Microsoft.Extensions.Logging;
+using Po.VicTranslate.Api.Services.Validation;
 
 namespace Po.VicTranslate.Api.Services;
 
@@ -13,17 +14,22 @@ public class AudioSynthesisService : IAudioSynthesisService
     private readonly SpeechConfig _speechConfig;
     private readonly ILogger<AudioSynthesisService> _logger;
 
-    public AudioSynthesisService(IOptions<ApiSettings> apiSettings, ILogger<AudioSynthesisService> logger)
+    public AudioSynthesisService(
+        IOptions<ApiSettings> apiSettings,
+        ISpeechConfigValidator configValidator,
+        ILogger<AudioSynthesisService> logger)
     {
         ArgumentNullException.ThrowIfNull(apiSettings);
+        ArgumentNullException.ThrowIfNull(configValidator);
         _logger = logger;
         var settings = apiSettings.Value;
 
-        if (string.IsNullOrWhiteSpace(settings.AzureSpeechSubscriptionKey) ||
-            string.IsNullOrWhiteSpace(settings.AzureSpeechRegion))
+        // Delegate validation to the validator (SRP)
+        if (!configValidator.IsValid(settings))
         {
-            _logger.LogError("Azure Speech settings (SubscriptionKey, Region) are not configured properly in appsettings.json.");
-            throw new InvalidOperationException("Azure Speech settings are not configured.");
+            var error = configValidator.GetValidationError(settings);
+            _logger.LogError("Azure Speech settings validation failed: {Error}", error);
+            throw new InvalidOperationException($"Azure Speech settings are not configured: {error}");
         }
 
         _logger.LogInformation("Initializing Azure Speech Service with Region: {Region}", settings.AzureSpeechRegion);

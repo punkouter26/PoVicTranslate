@@ -75,3 +75,18 @@ MauiClient/Platforms/MacCatalyst/bin/
 MauiClient/Platforms/Windows/obj/
 MauiClient/Platforms/Windows/bin/
 .azure
+
+# Audio synthesis outputs
+src/Po.VicTranslate.Api/audio_output/*.mp3
+src/Po.VicTranslate.Api/audio_output/*.wav
+
+# E2E test artifacts
+tests/Po.VicTranslate.E2ETests/test-results/
+tests/Po.VicTranslate.E2ETests/playwright-report/
+
+# Azurite local storage
+__azurite_db_*.json
+
+# Debug logs and reports
+src/DEBUG/logs/
+src/DEBUG/reports/

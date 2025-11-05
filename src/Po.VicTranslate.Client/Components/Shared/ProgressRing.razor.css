@@ -1,0 +1,79 @@
+/* Progress Ring Styles */
+
+.progress-ring-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-ring {
+    transform: rotate(-90deg);
+    transition: all 0.3s ease;
+}
+
+.progress-ring-circle {
+    transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+    stroke-linecap: round;
+}
+
+.progress-ring-text {
+    position: absolute;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.progress-count {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.progress-max {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-left: 2px;
+}
+
+.text-safe {
+    color: #51cf66;
+}
+
+.text-warning {
+    color: #ffd43b;
+}
+
+.text-danger {
+    color: #ff6b6b;
+}
+
+.text-over {
+    color: #ff6b6b;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .progress-ring,
+    .progress-ring-circle,
+    .progress-ring-text {
+        transition-duration: 0.01ms !important;
+    }
+    
+    .text-over {
+        animation: none !important;
+    }
+}

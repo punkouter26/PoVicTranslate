@@ -1,0 +1,99 @@
+<div class="results-section animate-slide-up">
+    <label class="urban-label results-label">
+        <i class="fas fa-scroll"></i>
+        Victorian Translation
+    </label>
+    
+    <div class="result-card">
+        <div class="result-actions">
+            <button class="copy-btn" @onclick="OnCopyClickAsync" title="Copy to clipboard">
+                <i class="fas fa-copy"></i>
+            </button>
+        </div>
+        <EditMode 
+            Text="@TranslatedText"
+            IsEditMode="@IsEditMode"
+            OnEnterEdit="@OnEnterEdit"
+            OnSaveEdit="@OnSaveEditAsync"
+            OnCancelEdit="@OnCancelEdit"
+            OnRetranslateRequested="@OnRetranslateAsync"
+        />
+    </div>
+    
+    <div class="audio-section">
+        <button class="urban-btn speech-btn" 
+                @onclick="OnSpeakClickAsync" 
+                disabled="@(!CanSpeak)">
+            @if (IsSpeaking)
+            {
+                <div class="btn-content speaking">
+                    <div class="audio-visualizer">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <span>Speaking with proper accent...</span>
+                </div>
+            }
+            else
+            {
+                <div class="btn-content">
+                    <i class="fas fa-volume-up"></i>
+                    <span>Hear It Spoken</span>
+                </div>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string TranslatedText { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsEditMode { get; set; }
+
+    [Parameter]
+    public bool IsSpeaking { get; set; }
+
+    [Parameter]
+    public bool CanSpeak { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnCopyClick { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnEnterEdit { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<string> OnSaveEdit { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnCancelEdit { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnRetranslate { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback OnSpeakClick { get; set; }
+
+    private async Task OnCopyClickAsync()
+    {
+        await OnCopyClick.InvokeAsync();
+    }
+
+    private async Task OnSaveEditAsync(string editedText)
+    {
+        await OnSaveEdit.InvokeAsync(editedText);
+    }
+
+    private async Task OnRetranslateAsync()
+    {
+        await OnRetranslate.InvokeAsync();
+    }
+
+    private async Task OnSpeakClickAsync()
+    {
+        await OnSpeakClick.InvokeAsync();
+    }
+}

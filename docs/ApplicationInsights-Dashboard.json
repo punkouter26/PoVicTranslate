@@ -1,0 +1,308 @@
+{
+  "properties": {
+    "lenses": [
+      {
+        "order": 0,
+        "parts": [
+          {
+            "position": {
+              "x": 0,
+              "y": 0,
+              "colSpan": 6,
+              "rowSpan": 1
+            },
+            "metadata": {
+              "type": "Extension/HubsExtension/PartType/MarkdownPart",
+              "settings": {
+                "content": {
+                  "settings": {
+                    "content": "# PoVicTranslate API Monitoring Dashboard\n\nReal-time monitoring of API performance, cache efficiency, and service health.",
+                    "title": "",
+                    "subtitle": "",
+                    "markdownSource": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 6,
+              "y": 0,
+              "colSpan": 3,
+              "rowSpan": 1
+            },
+            "metadata": {
+              "type": "Extension/HubsExtension/PartType/MarkdownPart",
+              "settings": {
+                "content": {
+                  "settings": {
+                    "content": "**Environment**: Production\n\n**Last Updated**: {{timestamp}}",
+                    "title": "Dashboard Info",
+                    "subtitle": "",
+                    "markdownSource": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 0,
+              "y": 1,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsLineChartPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name == \"ApiResponse\"\n| extend StatusCategory = tostring(customDimensions.StatusCategory)\n| summarize \n    Total = count(),\n    Success = countif(StatusCategory == \"Success\"),\n    Errors = countif(StatusCategory in (\"ClientError\", \"ServerError\"))\n    by bin(timestamp, 5m)\n| extend SuccessRate = (Success * 100.0 / Total)\n| project timestamp, SuccessRate, Total\n| render timechart",
+                  "PartTitle": "API Success Rate (Last 24h)",
+                  "PartSubTitle": "Target: > 95%"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 3,
+              "y": 1,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsLineChartPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name == \"ApiResponse\"\n| extend DurationMs = todouble(customMeasurements.DurationMs)\n| summarize \n    P50 = percentile(DurationMs, 50),\n    P95 = percentile(DurationMs, 95),\n    P99 = percentile(DurationMs, 99)\n    by bin(timestamp, 5m)\n| render timechart",
+                  "PartTitle": "API Response Time Percentiles",
+                  "PartSubTitle": "P50, P95, P99 in milliseconds"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 6,
+              "y": 1,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name in (\"CacheHit\", \"CacheMiss\")\n| summarize \n    Hits = countif(name == \"CacheHit\"),\n    Misses = countif(name == \"CacheMiss\")\n| extend \n    Total = Hits + Misses,\n    HitRate = round((Hits * 100.0) / (Hits + Misses), 2)\n| project HitRate, Hits, Misses, Total",
+                  "PartTitle": "Cache Hit Rate (Current)",
+                  "PartSubTitle": "Last 1 hour"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 0,
+              "y": 3,
+              "colSpan": 4,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsBarChartPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name == \"ApiResponse\"\n| extend \n    Endpoint = tostring(customDimensions.Endpoint),\n    DurationMs = todouble(customMeasurements.DurationMs)\n| summarize \n    AvgMs = round(avg(DurationMs), 2),\n    P95Ms = round(percentile(DurationMs, 95), 2),\n    Count = count()\n    by Endpoint\n| order by AvgMs desc\n| take 10",
+                  "PartTitle": "Top 10 Slowest Endpoints",
+                  "PartSubTitle": "Average and P95 response time"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 4,
+              "y": 3,
+              "colSpan": 2,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsPart",
+              "settings": {
+                "content": {
+                  "Query": "requests\n| where name contains \"/api/health/ready\"\n| summarize \n    Total = count(),\n    Healthy = countif(resultCode == 200),\n    Unhealthy = countif(resultCode >= 500)\n| extend HealthRate = round((Healthy * 100.0 / Total), 2)\n| project HealthRate, Total, Healthy, Unhealthy",
+                  "PartTitle": "Service Health Status",
+                  "PartSubTitle": "Ready endpoint health rate"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 6,
+              "y": 3,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsPieChartPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name == \"ApiResponse\"\n| extend StatusCode = toint(customDimensions.StatusCode)\n| summarize Count = count() by StatusCode\n| order by StatusCode asc",
+                  "PartTitle": "HTTP Status Code Distribution",
+                  "PartSubTitle": "Last 24 hours"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 0,
+              "y": 5,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsLineChartPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name in (\"CacheHit\", \"CacheMiss\")\n| extend CacheType = tostring(customDimensions.CacheType)\n| summarize \n    Hits = countif(name == \"CacheHit\"),\n    Misses = countif(name == \"CacheMiss\")\n    by bin(timestamp, 15m), CacheType\n| extend HitRate = (Hits * 100.0) / (Hits + Misses)\n| project timestamp, CacheType, HitRate\n| render timechart",
+                  "PartTitle": "Cache Hit Rate by Type",
+                  "PartSubTitle": "Lyrics, Song, Artist, Album"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 3,
+              "y": 5,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsLineChartPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name == \"CacheEviction\"\n| extend Reason = tostring(customDimensions.Reason)\n| summarize Count = count() by bin(timestamp, 15m), Reason\n| render timechart",
+                  "PartTitle": "Cache Evictions Over Time",
+                  "PartSubTitle": "By eviction reason"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 6,
+              "y": 5,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name == \"TranslationRequest\"\n| extend Success = tobool(customDimensions.Success)\n| summarize \n    Total = count(),\n    Successful = countif(Success == true),\n    Failed = countif(Success == false)\n| extend SuccessRate = round((Successful * 100.0 / Total), 2)\n| project SuccessRate, Total, Successful, Failed",
+                  "PartTitle": "Translation Success Rate",
+                  "PartSubTitle": "Azure OpenAI translation performance"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 0,
+              "y": 7,
+              "colSpan": 4,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsGridPart",
+              "settings": {
+                "content": {
+                  "Query": "exceptions\n| where timestamp > ago(24h)\n| summarize \n    Count = count(),\n    LastOccurrence = max(timestamp)\n    by problemId, type, outerMessage\n| order by Count desc\n| take 10\n| project LastOccurrence, type, outerMessage, Count",
+                  "PartTitle": "Top 10 Exceptions (Last 24h)",
+                  "PartSubTitle": "Most frequent errors"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 4,
+              "y": 7,
+              "colSpan": 2,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsPart",
+              "settings": {
+                "content": {
+                  "Query": "requests\n| where timestamp > ago(1h)\n| summarize RequestCount = count()\n| extend RequestsPerMinute = round(RequestCount / 60.0, 2)\n| project RequestCount, RequestsPerMinute",
+                  "PartTitle": "Request Volume",
+                  "PartSubTitle": "Last hour"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 6,
+              "y": 7,
+              "colSpan": 3,
+              "rowSpan": 2
+            },
+            "metadata": {
+              "type": "Extension/AppInsightsExtension/PartType/AnalyticsBarChartPart",
+              "settings": {
+                "content": {
+                  "Query": "customEvents\n| where name == \"CacheMiss\"\n| extend CacheKey = tostring(customDimensions.CacheKey)\n| summarize MissCount = count() by CacheKey\n| order by MissCount desc\n| take 10",
+                  "PartTitle": "Top 10 Cache Misses",
+                  "PartSubTitle": "Items needing optimization"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "model": {
+        "timeRange": {
+          "value": {
+            "relative": {
+              "duration": 24,
+              "timeUnit": 1
+            }
+          },
+          "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+        },
+        "filterLocale": {
+          "value": "en-us"
+        },
+        "filters": {
+          "value": {
+            "MsPortalFx_TimeRange": {
+              "model": {
+                "format": "utc",
+                "granularity": "auto",
+                "relative": "24h"
+              },
+              "displayCache": {
+                "name": "UTC Time",
+                "value": "Past 24 hours"
+              },
+              "filteredPartIds": []
+            }
+          }
+        }
+      }
+    }
+  },
+  "name": "PoVicTranslate-Monitoring-Dashboard",
+  "type": "Microsoft.Portal/dashboards",
+  "location": "INSERT LOCATION",
+  "tags": {
+    "hidden-title": "PoVicTranslate API Monitoring"
+  },
+  "apiVersion": "2020-09-01-preview"
+}

@@ -15,6 +15,9 @@ public class TranslationViewModel : INotifyPropertyChanged
     private bool _isSpeaking;
     private bool _isLoading;
     private List<string> _availableSongs = new();
+    private bool _isEditMode;
+    private string _editedText = string.Empty;
+    private string _originalTranslatedText = string.Empty;
 
     public string InputText
     {
@@ -58,6 +61,24 @@ public class TranslationViewModel : INotifyPropertyChanged
         set => SetProperty(ref _availableSongs, value);
     }
 
+    public bool IsEditMode
+    {
+        get => _isEditMode;
+        set => SetProperty(ref _isEditMode, value);
+    }
+
+    public string EditedText
+    {
+        get => _editedText;
+        set => SetProperty(ref _editedText, value);
+    }
+
+    public string OriginalTranslatedText
+    {
+        get => _originalTranslatedText;
+        set => SetProperty(ref _originalTranslatedText, value);
+    }
+
     public int WordCount => CalculateWordCount();
 
     public bool CanTranslate => !IsTranslating && !string.IsNullOrWhiteSpace(InputText) && WordCount <= 200;
@@ -82,6 +103,43 @@ public class TranslationViewModel : INotifyPropertyChanged
     public void ClearTranslation()
     {
         TranslatedText = string.Empty;
+    }
+
+    public void EnterEditMode()
+    {
+        if (string.IsNullOrWhiteSpace(TranslatedText))
+        {
+            return;
+        }
+
+        OriginalTranslatedText = TranslatedText;
+        EditedText = TranslatedText;
+        IsEditMode = true;
+    }
+
+    public void SaveEdit()
+    {
+        if (IsEditMode)
+        {
+            TranslatedText = EditedText;
+            ExitEditMode();
+        }
+    }
+
+    public void CancelEdit()
+    {
+        if (IsEditMode)
+        {
+            TranslatedText = OriginalTranslatedText;
+            ExitEditMode();
+        }
+    }
+
+    public void ExitEditMode()
+    {
+        IsEditMode = false;
+        EditedText = string.Empty;
+        OriginalTranslatedText = string.Empty;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

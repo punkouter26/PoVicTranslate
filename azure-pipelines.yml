@@ -1,0 +1,336 @@
+# Azure DevOps CI/CD Pipeline for PoVicTranslate
+# This pipeline builds, tests, and deploys the application to Azure App Service
+
+trigger:
+  branches:
+    include:
+      - master
+      - main
+      - develop
+  paths:
+    exclude:
+      - README.md
+      - docs/**
+      - .gitignore
+
+pr:
+  branches:
+    include:
+      - master
+      - main
+  paths:
+    exclude:
+      - README.md
+      - docs/**
+
+variables:
+  # Build Configuration
+  buildConfiguration: 'Release'
+  dotnetVersion: '9.0.x'
+  
+  # Azure Configuration (set these in Azure DevOps pipeline variables)
+  # azureSubscription: 'YOUR_AZURE_SERVICE_CONNECTION'
+  # webAppName: 'app-povictranslate-prod'
+  # resourceGroupName: 'rg-povictranslate-prod'
+  
+  # Project Paths
+  apiProject: 'src/Po.VicTranslate.Api/Po.VicTranslate.Api.csproj'
+  clientProject: 'src/Po.VicTranslate.Client/Po.VicTranslate.Client.csproj'
+  solutionPath: 'PoVicTranslate.sln'
+  
+  # Test Projects
+  unitTestProject: 'tests/Po.VicTranslate.UnitTests/Po.VicTranslate.UnitTests.csproj'
+  integrationTestProject: 'tests/Po.VicTranslate.IntegrationTests/Po.VicTranslate.IntegrationTests.csproj'
+  e2eTestProject: 'tests/Po.VicTranslate.E2ETests'
+  
+  # Artifact Settings
+  artifactName: 'povictranslate-api'
+  publishPath: '$(Build.ArtifactStagingDirectory)'
+
+stages:
+  # ===================================================================
+  # Stage 1: Build and Unit Test
+  # ===================================================================
+  - stage: Build
+    displayName: 'Build and Unit Test'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build Solution'
+        pool:
+          vmImage: 'windows-latest'
+        
+        steps:
+          # Install .NET SDK
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK $(dotnetVersion)'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+              installationPath: $(Agent.ToolsDirectory)/dotnet
+          
+          # Restore NuGet packages
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet Packages'
+            inputs:
+              command: 'restore'
+              projects: '$(solutionPath)'
+              feedsToUse: 'select'
+          
+          # Build solution
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Solution'
+            inputs:
+              command: 'build'
+              projects: '$(solutionPath)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+          
+          # Run Unit Tests with Code Coverage
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Unit Tests'
+            inputs:
+              command: 'test'
+              projects: '$(unitTestProject)'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+              publishTestResults: true
+          
+          # Publish Code Coverage Results
+          - task: PublishCodeCoverageResults@2
+            displayName: 'Publish Code Coverage'
+            inputs:
+              summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
+              codecoverageTool: 'cobertura'
+          
+          # Publish API project
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish API Project'
+            inputs:
+              command: 'publish'
+              publishWebProjects: false
+              projects: '$(apiProject)'
+              arguments: '--configuration $(buildConfiguration) --output $(publishPath) --no-build'
+              zipAfterPublish: true
+          
+          # Publish build artifacts
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Build Artifacts'
+            inputs:
+              PathtoPublish: '$(publishPath)'
+              ArtifactName: '$(artifactName)'
+              publishLocation: 'Container'
+
+  # ===================================================================
+  # Stage 2: Integration Tests
+  # ===================================================================
+  - stage: IntegrationTest
+    displayName: 'Integration Tests'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: IntegrationTestJob
+        displayName: 'Run Integration Tests'
+        pool:
+          vmImage: 'windows-latest'
+        
+        steps:
+          # Install .NET SDK
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK $(dotnetVersion)'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+              installationPath: $(Agent.ToolsDirectory)/dotnet
+          
+          # Install Azurite for local storage emulation
+          - task: Npm@1
+            displayName: 'Install Azurite'
+            inputs:
+              command: 'custom'
+              customCommand: 'install -g azurite'
+          
+          # Start Azurite in background
+          - script: |
+              start /B azurite --silent --location $(Agent.TempDirectory)/azurite --debug $(Agent.TempDirectory)/azurite/debug.log
+            displayName: 'Start Azurite (Azure Storage Emulator)'
+          
+          # Wait for Azurite to be ready
+          - script: timeout /t 5 /nobreak
+            displayName: 'Wait for Azurite'
+          
+          # Restore and build
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore Dependencies'
+            inputs:
+              command: 'restore'
+              projects: '$(integrationTestProject)'
+          
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Integration Tests'
+            inputs:
+              command: 'build'
+              projects: '$(integrationTestProject)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+          
+          # Run Integration Tests
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Integration Tests'
+            inputs:
+              command: 'test'
+              projects: '$(integrationTestProject)'
+              arguments: '--configuration $(buildConfiguration) --no-build --logger trx --results-directory $(Agent.TempDirectory)/IntegrationTestResults'
+              publishTestResults: true
+            env:
+              DISABLE_HTTPS_REDIRECTION: 'true'
+              HTTP_PORT: '5002'
+
+  # ===================================================================
+  # Stage 3: Deploy to Staging
+  # ===================================================================
+  - stage: DeployStaging
+    displayName: 'Deploy to Staging'
+    dependsOn: IntegrationTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: DeployStagingJob
+        displayName: 'Deploy to Staging Environment'
+        pool:
+          vmImage: 'windows-latest'
+        environment: 'staging'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Download build artifacts
+                - download: current
+                  artifact: '$(artifactName)'
+                
+                # Deploy to Azure App Service (Staging Slot)
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service (Staging)'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appType: 'webApp'
+                    appName: '$(webAppName)'
+                    deployToSlotOrASE: true
+                    resourceGroupName: '$(resourceGroupName)'
+                    slotName: 'staging'
+                    package: '$(Pipeline.Workspace)/$(artifactName)/**/*.zip'
+                    deploymentMethod: 'auto'
+                
+                # Run smoke tests against staging
+                - task: PowerShell@2
+                  displayName: 'Run Smoke Tests (Staging)'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      $stagingUrl = "https://$(webAppName)-staging.azurewebsites.net"
+                      Write-Host "Testing staging endpoint: $stagingUrl/api/health/live"
+                      
+                      $maxRetries = 5
+                      $retryCount = 0
+                      $success = $false
+                      
+                      while ($retryCount -lt $maxRetries -and -not $success) {
+                          try {
+                              Start-Sleep -Seconds 10
+                              $response = Invoke-WebRequest -Uri "$stagingUrl/api/health/live" -UseBasicParsing -TimeoutSec 30
+                              if ($response.StatusCode -eq 200) {
+                                  Write-Host "✓ Staging deployment successful! Health check returned 200 OK"
+                                  $success = $true
+                              }
+                          }
+                          catch {
+                              $retryCount++
+                              Write-Host "⚠ Attempt $retryCount failed. Retrying..."
+                          }
+                      }
+                      
+                      if (-not $success) {
+                          Write-Error "❌ Staging deployment health check failed after $maxRetries attempts"
+                          exit 1
+                      }
+
+  # ===================================================================
+  # Stage 4: Deploy to Production
+  # ===================================================================
+  - stage: DeployProduction
+    displayName: 'Deploy to Production'
+    dependsOn: IntegrationTest
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['Build.SourceBranch'], 'refs/heads/main')))
+    jobs:
+      - deployment: DeployProductionJob
+        displayName: 'Deploy to Production Environment'
+        pool:
+          vmImage: 'windows-latest'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Download build artifacts
+                - download: current
+                  artifact: '$(artifactName)'
+                
+                # Deploy to Azure App Service
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service (Production)'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    appType: 'webApp'
+                    appName: '$(webAppName)'
+                    resourceGroupName: '$(resourceGroupName)'
+                    package: '$(Pipeline.Workspace)/$(artifactName)/**/*.zip'
+                    deploymentMethod: 'auto'
+                
+                # Run smoke tests against production
+                - task: PowerShell@2
+                  displayName: 'Run Smoke Tests (Production)'
+                  inputs:
+                    targetType: 'inline'
+                    script: |
+                      $prodUrl = "https://$(webAppName).azurewebsites.net"
+                      Write-Host "Testing production endpoint: $prodUrl/api/health/live"
+                      
+                      $maxRetries = 5
+                      $retryCount = 0
+                      $success = $false
+                      
+                      while ($retryCount -lt $maxRetries -and -not $success) {
+                          try {
+                              Start-Sleep -Seconds 10
+                              $response = Invoke-WebRequest -Uri "$prodUrl/api/health/live" -UseBasicParsing -TimeoutSec 30
+                              if ($response.StatusCode -eq 200) {
+                                  Write-Host "✓ Production deployment successful! Health check returned 200 OK"
+                                  $success = $true
+                              }
+                          }
+                          catch {
+                              $retryCount++
+                              Write-Host "⚠ Attempt $retryCount failed. Retrying..."
+                          }
+                      }
+                      
+                      if (-not $success) {
+                          Write-Error "❌ Production deployment health check failed after $maxRetries attempts"
+                          exit 1
+                      }
+                
+                # Deploy Application Insights Alerts (if not already deployed)
+                - task: AzureCLI@2
+                  displayName: 'Deploy Application Insights Alerts'
+                  inputs:
+                    azureSubscription: '$(azureSubscription)'
+                    scriptType: 'pscore'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      Write-Host "Deploying Application Insights alerts..."
+                      az deployment group create `
+                        --resource-group "$(resourceGroupName)" `
+                        --template-file "$(Pipeline.Workspace)/$(artifactName)/infra/monitoring-alerts.bicep" `
+                        --parameters "$(Pipeline.Workspace)/$(artifactName)/infra/monitoring-alerts.parameters.json" `
+                        --parameters appInsightsName="appi-$(webAppName)"
+                      
+                      if ($LASTEXITCODE -eq 0) {
+                          Write-Host "✓ Application Insights alerts deployed successfully"
+                      } else {
+                          Write-Warning "⚠ Alert deployment failed or was skipped"
+                      }

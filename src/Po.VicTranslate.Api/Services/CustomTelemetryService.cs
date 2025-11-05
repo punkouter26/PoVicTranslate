@@ -14,6 +14,10 @@ public interface ICustomTelemetryService
     void TrackDataUsage(string operation, string entityType, int recordCount);
     void TrackPerformanceMetric(string operationName, long durationMs, bool success);
     void TrackUserActivity(string activity, string? userId = null);
+    void TrackCacheHit(string cacheKey, string cacheType);
+    void TrackCacheMiss(string cacheKey, string cacheType);
+    void TrackCacheEviction(string cacheKey, string cacheType, string reason);
+    void TrackApiResponse(string endpoint, int statusCode, long durationMs);
 }
 
 public class CustomTelemetryService : ICustomTelemetryService
@@ -173,6 +177,98 @@ public class CustomTelemetryService : ICustomTelemetryService
         _telemetryClient.TrackEvent("UserActivity", properties);
 
         _logger.LogInformation("User activity: {Activity}, User={UserId}", activity, userId ?? "Anonymous");
+    }
+
+    /// <summary>
+    /// Track cache hit for performance monitoring
+    /// KQL: customEvents | where name == "CacheHit" | summarize count() by tostring(customDimensions.CacheType)
+    /// </summary>
+    public void TrackCacheHit(string cacheKey, string cacheType)
+    {
+        var properties = new Dictionary<string, string>
+        {
+            { "CacheKey", cacheKey },
+            { "CacheType", cacheType }
+        };
+
+        _telemetryClient.TrackEvent("CacheHit", properties);
+
+        _logger.LogDebug("Cache hit: Type={CacheType}, Key={CacheKey}", cacheType, cacheKey);
+    }
+
+    /// <summary>
+    /// Track cache miss for performance monitoring
+    /// KQL: customEvents | where name == "CacheMiss" | summarize count() by tostring(customDimensions.CacheType)
+    /// </summary>
+    public void TrackCacheMiss(string cacheKey, string cacheType)
+    {
+        var properties = new Dictionary<string, string>
+        {
+            { "CacheKey", cacheKey },
+            { "CacheType", cacheType }
+        };
+
+        _telemetryClient.TrackEvent("CacheMiss", properties);
+
+        _logger.LogDebug("Cache miss: Type={CacheType}, Key={CacheKey}", cacheType, cacheKey);
+    }
+
+    /// <summary>
+    /// Track cache eviction events
+    /// KQL: customEvents | where name == "CacheEviction" | summarize count() by tostring(customDimensions.Reason)
+    /// </summary>
+    public void TrackCacheEviction(string cacheKey, string cacheType, string reason)
+    {
+        var properties = new Dictionary<string, string>
+        {
+            { "CacheKey", cacheKey },
+            { "CacheType", cacheType },
+            { "Reason", reason }
+        };
+
+        _telemetryClient.TrackEvent("CacheEviction", properties);
+
+        _logger.LogInformation("Cache eviction: Type={CacheType}, Key={CacheKey}, Reason={Reason}", 
+            cacheType, cacheKey, reason);
+    }
+
+    /// <summary>
+    /// Track API response metrics for monitoring
+    /// KQL: customEvents | where name == "ApiResponse" | summarize avg(customMeasurements.DurationMs), count() by tostring(customDimensions.Endpoint), tostring(customDimensions.StatusCode)
+    /// </summary>
+    public void TrackApiResponse(string endpoint, int statusCode, long durationMs)
+    {
+        var properties = new Dictionary<string, string>
+        {
+            { "Endpoint", endpoint },
+            { "StatusCode", statusCode.ToString() },
+            { "StatusCategory", GetStatusCategory(statusCode) }
+        };
+
+        var metrics = new Dictionary<string, double>
+        {
+            { "DurationMs", durationMs }
+        };
+
+        _telemetryClient.TrackEvent("ApiResponse", properties, metrics);
+
+        if (statusCode >= 400)
+        {
+            _logger.LogWarning("API error response: {Endpoint} returned {StatusCode} in {DurationMs}ms", 
+                endpoint, statusCode, durationMs);
+        }
+    }
+
+    private static string GetStatusCategory(int statusCode)
+    {
+        return statusCode switch
+        {
+            >= 200 and < 300 => "Success",
+            >= 300 and < 400 => "Redirect",
+            >= 400 and < 500 => "ClientError",
+            >= 500 => "ServerError",
+            _ => "Unknown"
+        };
     }
 
     private static string GetTextLengthCategory(int length)

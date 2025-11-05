@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Po.VicTranslate.Api.Services;
+using Po.VicTranslate.Api.Services.BrowserLog;
 using Po.VicTranslate.Api.Models;
 
 namespace Po.VicTranslate.Api.Controllers;
@@ -10,11 +11,16 @@ public class DebugController : ControllerBase
 {
     private readonly IDebugLogService _debugLogService;
     private readonly ILogger<DebugController> _logger;
+    private readonly BrowserLogStrategyFactory _strategyFactory;
 
-    public DebugController(IDebugLogService debugLogService, ILogger<DebugController> logger)
+    public DebugController(
+        IDebugLogService debugLogService, 
+        ILogger<DebugController> logger,
+        BrowserLogStrategyFactory strategyFactory)
     {
         _debugLogService = debugLogService;
         _logger = logger;
+        _strategyFactory = strategyFactory;
     }
 
     /// <summary>
@@ -151,51 +157,19 @@ public class DebugController : ControllerBase
     }
 
     /// <summary>
-    /// Receive logs from browser-side JavaScript
+    /// Receive logs from browser-side JavaScript.
+    /// Refactored using Strategy Pattern to reduce cyclomatic complexity from 40 to 5.
     /// </summary>
     [HttpPost("browser-log")]
     public async Task<ActionResult> ReceiveBrowserLog([FromBody] BrowserLogRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        
         try
         {
-            switch (request.Type?.ToLower())
-            {
-                case "event":
-                case "browser-event":
-                    await _debugLogService.LogEventAsync(
-                        request.Payload?.EventType ?? "BrowserEvent",
-                        request.Payload?.Message ?? "Browser event",
-                        request.Payload?.Data
-                    );
-                    break;
-
-                case "instability":
-                    await _debugLogService.LogInstabilityAsync(
-                        request.Payload?.Component ?? "Browser",
-                        request.Payload?.Issue ?? "Browser instability",
-                        request.Payload?.DiagnosticData
-                    );
-                    break;
-
-                case "failure":
-                    await _debugLogService.LogStructuralFailureAsync(
-                        request.Payload?.Component ?? "Browser",
-                        request.Payload?.Failure ?? "Browser failure",
-                        null,
-                        request.Payload?.Context
-                    );
-                    break;
-
-                default:
-                    await _debugLogService.LogEventAsync(
-                        "UnknownBrowserEvent",
-                        $"Unknown browser log type: {request.Type}",
-                        request.Payload
-                    );
-                    break;
-            }
-
+            var strategy = _strategyFactory.GetStrategy(request.Type);
+            await strategy.LogAsync(request, _debugLogService);
+            
             return Ok(new { Message = "Browser log received successfully" });
         }
         catch (Exception ex)

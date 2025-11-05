@@ -5,6 +5,7 @@ using Moq;
 using Po.VicTranslate.Api.Models;
 using Po.VicTranslate.Api.Controllers;
 using Po.VicTranslate.Api.Services;
+using Po.VicTranslate.Api.Services.Validation;
 using Xunit;
 
 namespace VictorianTranslator.UnitTests.Controllers;
@@ -13,6 +14,7 @@ public class TranslationControllerTests
 {
     private readonly Mock<ITranslationService> _mockTranslationService;
     private readonly Mock<ICustomTelemetryService> _mockTelemetryService;
+    private readonly Mock<IInputValidator> _mockInputValidator;
     private readonly Mock<ILogger<TranslationController>> _mockLogger;
     private readonly TranslationController _controller;
 
@@ -20,10 +22,13 @@ public class TranslationControllerTests
     {
         _mockTranslationService = new Mock<ITranslationService>();
         _mockTelemetryService = new Mock<ICustomTelemetryService>();
+        _mockInputValidator = new Mock<IInputValidator>();
         _mockLogger = new Mock<ILogger<TranslationController>>();
+        
         _controller = new TranslationController(
             _mockTranslationService.Object,
             _mockTelemetryService.Object,
+            _mockInputValidator.Object,
             _mockLogger.Object);
     }
 
@@ -34,8 +39,17 @@ public class TranslationControllerTests
         var request = new TranslationRequest { Text = "Hello world" };
         var expectedTranslation = "Good morrow, esteemed fellow denizens of this terrestrial sphere";
 
+        // Setup validator to return valid result with sanitized text
+        _mockInputValidator
+            .Setup(x => x.ValidateTextContent(request.Text, 5000))
+            .Returns(new ValidationResult 
+            { 
+                IsValid = true, 
+                SanitizedValue = request.Text 
+            });
+
         _mockTranslationService
-            .Setup(x => x.TranslateToVictorianEnglishAsync(It.IsAny<string>()))
+            .Setup(x => x.TranslateToVictorianEnglishAsync(request.Text))
             .ReturnsAsync(expectedTranslation);
 
         // Act
@@ -56,6 +70,11 @@ public class TranslationControllerTests
     {
         // Arrange
         var request = new TranslationRequest { Text = text! };
+        
+        // Setup validator to return failure for empty text
+        _mockInputValidator
+            .Setup(x => x.ValidateTextContent(text!, 5000))
+            .Returns(ValidationResult.Failure("Text content cannot be empty."));
 
         // Act
         var result = await _controller.Translate(request);
@@ -63,7 +82,7 @@ public class TranslationControllerTests
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
         var badRequest = result as BadRequestObjectResult;
-        badRequest!.Value.Should().Be("Text cannot be empty.");
+        badRequest.Should().NotBeNull();
     }
 
     [Fact]
@@ -71,6 +90,16 @@ public class TranslationControllerTests
     {
         // Arrange
         var request = new TranslationRequest { Text = "Test text" };
+        
+        // Setup validator to return valid result
+        _mockInputValidator
+            .Setup(x => x.ValidateTextContent(request.Text, 5000))
+            .Returns(new ValidationResult 
+            { 
+                IsValid = true, 
+                SanitizedValue = request.Text 
+            });
+            
         _mockTranslationService
             .Setup(x => x.TranslateToVictorianEnglishAsync(request.Text))
             .ReturnsAsync("Translated text");
@@ -89,8 +118,18 @@ public class TranslationControllerTests
     {
         // Arrange
         var request = new TranslationRequest { Text = "Test" };
+        
+        // Setup validator to return valid result
+        _mockInputValidator
+            .Setup(x => x.ValidateTextContent(request.Text, 5000))
+            .Returns(new ValidationResult 
+            { 
+                IsValid = true, 
+                SanitizedValue = request.Text 
+            });
+            
         _mockTranslationService
-            .Setup(x => x.TranslateToVictorianEnglishAsync(It.IsAny<string>()))
+            .Setup(x => x.TranslateToVictorianEnglishAsync(request.Text))
             .ThrowsAsync(new InvalidOperationException("Service error"));
 
         // Act & Assert

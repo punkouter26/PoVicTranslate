@@ -1,0 +1,108 @@
+@namespace Po.VicTranslate.Client.Components.Shared
+@using Po.VicTranslate.Client.Models
+
+<div class="toast-container @GetPositionClass() @(IsVisible ? "visible" : "")">
+    <div class="toast @GetTypeClass()">
+        <div class="toast-icon">
+            @if (Type == ToastType.Success)
+            {
+                <i class="fas fa-check-circle"></i>
+            }
+            else if (Type == ToastType.Error)
+            {
+                <i class="fas fa-exclamation-circle"></i>
+            }
+            else if (Type == ToastType.Info)
+            {
+                <i class="fas fa-info-circle"></i>
+            }
+            else if (Type == ToastType.Warning)
+            {
+                <i class="fas fa-exclamation-triangle"></i>
+            }
+        </div>
+        <div class="toast-message">@Message</div>
+        @if (ShowClose)
+        {
+            <button class="toast-close" @onclick="Hide" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    [Parameter]
+    public ToastType Type { get; set; } = ToastType.Info;
+
+    [Parameter]
+    public ToastPosition Position { get; set; } = ToastPosition.BottomCenter;
+
+    [Parameter]
+    public bool ShowClose { get; set; } = true;
+
+    [Parameter]
+    public int AutoDismissMs { get; set; } = 3000;
+
+    [Parameter]
+    public EventCallback OnHide { get; set; }
+
+    private bool IsVisible { get; set; }
+    private System.Threading.Timer? _timer;
+
+    public void Show()
+    {
+        IsVisible = true;
+        StateHasChanged();
+
+        if (AutoDismissMs > 0)
+        {
+            _timer?.Dispose();
+            _timer = new System.Threading.Timer(_ => InvokeAsync(Hide), null, AutoDismissMs, Timeout.Infinite);
+        }
+    }
+
+    public void ShowMessage(string message, ToastType type = ToastType.Info, int autoDismissMs = 3000)
+    {
+        Message = message;
+        Type = type;
+        AutoDismissMs = autoDismissMs;
+        Show();
+    }
+
+    public void Hide()
+    {
+        IsVisible = false;
+        _timer?.Dispose();
+        StateHasChanged();
+        OnHide.InvokeAsync();
+    }
+
+    private string GetTypeClass() => Type switch
+    {
+        ToastType.Success => "toast-success",
+        ToastType.Error => "toast-error",
+        ToastType.Warning => "toast-warning",
+        ToastType.Info => "toast-info",
+        _ => "toast-info"
+    };
+
+    private string GetPositionClass() => Position switch
+    {
+        ToastPosition.TopLeft => "position-top-left",
+        ToastPosition.TopCenter => "position-top-center",
+        ToastPosition.TopRight => "position-top-right",
+        ToastPosition.BottomLeft => "position-bottom-left",
+        ToastPosition.BottomCenter => "position-bottom-center",
+        ToastPosition.BottomRight => "position-bottom-right",
+        _ => "position-bottom-center"
+    };
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}

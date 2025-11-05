@@ -3,14 +3,15 @@
 @namespace VictorianTranslator.Components.Pages
 @using Po.VicTranslate.Client.Services
 @using Po.VicTranslate.Client.ViewModels
-@using Po.VicTranslate.Client.Extensions
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Web
-@using Microsoft.AspNetCore.Components.Forms
+@using Po.VicTranslate.Client.Components.Pages.Translation
 @inject ITranslationOrchestrator TranslationOrchestrator
+@inject HistoryService HistoryService
 @rendermode InteractiveWebAssembly
 
 <PageTitle>PoVicTranslate</PageTitle>
+
+<!-- Toast Notification -->
+<Toast @ref="_toast" Position="ToastPosition.TopRight" />
 
 <div class="main-wrapper animate-fade-in">
     <div class="urban-container">
@@ -22,75 +23,23 @@
             </div>
         }
 
-        <div class="hero-section">
-            <h1 class="urban-title">
-                <span class="title-main">Street → Sophisticated</span>
-                <small class="title-sub">Transform rap lyrics into Victorian elegance</small>
-            </h1>
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <i class="fas fa-music"></i>
-                    <span>246 Songs</span>
-                </div>
-                <div class="stat-divider">•</div>
-                <div class="stat-item">
-                    <i class="fas fa-magic"></i>
-                    <span>AI Powered</span>
-                </div>
-                <div class="stat-divider">•</div>
-                <div class="stat-item">
-                    <i class="fas fa-crown"></i>
-                    <span>Wu-Tang Edition</span>
-                </div>
-            </div>
-        </div>
+        <TranslationHeader />
         
         <div class="input-section">
-            <div class="song-selector-wrapper">
-                <label class="urban-label">
-                    <i class="fas fa-compact-disc"></i>
-                    Choose Your Track
-                </label>
-                <div class="song-controls">
-                    <select id="songSelect" class="form-select urban-select" @onchange="OnSongSelectedAsync">
-                        <option value="">-- Drop that beat, select a Wu-Tang classic --</option>
-                        @foreach (var song in _viewModel.AvailableSongs)
-                        {
-                            <option value="@song">@song.Replace(".txt", "").Replace("_", " ").ToTitleCase()</option>
-                        }
-                    </select>
-                    <button class="urban-btn urban-btn-secondary shuffle-btn" @onclick="OnLoadRandomSongAsync" disabled="@(!_viewModel.AvailableSongs.Any())">
-                        <i class="fas fa-random"></i>
-                        <span>Random</span>
-                    </button>
-                </div>
-            </div>
+            <SongSelector 
+                AvailableSongs="@_viewModel.AvailableSongs"
+                OnSongSelected="@OnSongSelectedAsync"
+                OnRandomClick="@OnLoadRandomSongAsync" />
 
             <div class="section-divider">
                 <span class="divider-text">OR DROP YOUR OWN BARS</span>
                 <div class="divider-line"></div>
             </div>
 
-            <div class="custom-input-wrapper">
-                <label for="inputText" class="urban-label">
-                    <i class="fas fa-microphone"></i>
-                    Your Lyrics
-                </label>
-                <div class="textarea-wrapper">
-                    <textarea @bind="_viewModel.InputText" 
-                              @bind:event="oninput"
-                              class="form-control urban-textarea" 
-                              id="inputText" 
-                              rows="6"
-                              placeholder="Spit your verses here... We'll make 'em sound royal 👑"
-                              disabled="@_viewModel.IsTranslating"></textarea>
-                    <div class="textarea-overlay">
-                        <div class="word-counter @(_viewModel.WordCount > 200 ? "limit-reached" : "")">
-                            @_viewModel.WordCount / 200 words
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <CustomLyricsInput 
+                @bind-CurrentText="@_viewModel.InputText"
+                WordCount="@_viewModel.WordCount"
+                IsDisabled="@_viewModel.IsTranslating" />
         </div>
         
         <div class="action-section">
@@ -114,45 +63,17 @@
 
         @if (!string.IsNullOrEmpty(_viewModel.TranslatedText))
         {
-            <div class="results-section animate-slide-up">
-                <label class="urban-label results-label">
-                    <i class="fas fa-scroll"></i>
-                    Victorian Translation
-                </label>
-                <div class="result-card">
-                    <div class="result-actions">
-                        <button class="copy-btn" @onclick="OnCopyToClipboardAsync" title="Copy to clipboard">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <div class="result-content">
-                        @_viewModel.TranslatedText
-                    </div>
-                </div>
-                
-                <div class="audio-section">
-                    <button class="urban-btn speech-btn" @onclick="OnSpeakTextAsync" disabled="@(!_viewModel.CanSpeak)">
-                        @if (_viewModel.IsSpeaking)
-                        {
-                            <div class="btn-content speaking">
-                                <div class="audio-visualizer">
-                                    <div class="bar"></div>
-                                    <div class="bar"></div>
-                                    <div class="bar"></div>
-                                </div>
-                                <span>Speaking with proper accent...</span>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="btn-content">
-                                <i class="fas fa-volume-up"></i>
-                                <span>Hear It Spoken</span>
-                            </div>
-                        }
-                    </button>
-                </div>
-            </div>
+            <TranslationResults 
+                TranslatedText="@_viewModel.TranslatedText"
+                IsEditMode="@_viewModel.IsEditMode"
+                IsSpeaking="@_viewModel.IsSpeaking"
+                CanSpeak="@_viewModel.CanSpeak"
+                OnCopyClick="@OnCopyToClipboardAsync"
+                OnEnterEdit="@(() => _viewModel.EnterEditMode())"
+                OnSaveEdit="@OnSaveEditAsync"
+                OnCancelEdit="@(() => _viewModel.CancelEdit())"
+                OnRetranslate="@OnRetranslateAsync"
+                OnSpeakClick="@OnSpeakTextAsync" />
         }
 
         @if (!string.IsNullOrEmpty(_viewModel.ErrorMessage))
@@ -170,17 +91,24 @@
     </div>
 </div>
 
+<!-- Floating Action Button for Mobile -->
+<FloatingActionButton 
+    OnClick="@OnTranslateAsync"
+    IsDisabled="@(!_viewModel.CanTranslate)"
+    IsLoading="@_viewModel.IsTranslating"
+/>
+
 @code {
     private readonly TranslationViewModel _viewModel = new();
+    private Toast? _toast;
 
     protected override async Task OnInitializedAsync()
     {
         await TranslationOrchestrator.InitializeAsync(_viewModel);
     }
 
-    private async Task OnSongSelectedAsync(ChangeEventArgs e)
+    private async Task OnSongSelectedAsync(string selectedSong)
     {
-        var selectedSong = e.Value?.ToString();
         if (string.IsNullOrEmpty(selectedSong))
         {
             _viewModel.InputText = string.Empty;
@@ -197,7 +125,21 @@
 
     private async Task OnTranslateAsync()
     {
-        await TranslationOrchestrator.TranslateTextAsync(_viewModel);
+        try
+        {
+            await TranslationOrchestrator.TranslateTextAsync(_viewModel);
+            
+            if (!string.IsNullOrWhiteSpace(_viewModel.TranslatedText))
+            {
+                await HistoryService.AddItemAsync(_viewModel.InputText, _viewModel.TranslatedText);
+                _toast?.ShowMessage("Translation complete!", ToastType.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            _viewModel.ErrorMessage = ex.Message;
+            _toast?.ShowMessage($"Translation failed: {ex.Message}", ToastType.Error);
+        }
     }
 
     private async Task OnSpeakTextAsync()
@@ -208,9 +150,28 @@
     private async Task OnCopyToClipboardAsync()
     {
         var success = await TranslationOrchestrator.CopyToClipboardAsync(_viewModel.TranslatedText);
-        if (!success)
+        if (success)
+        {
+            _toast?.ShowMessage("Copied to clipboard!", ToastType.Success);
+        }
+        else
         {
             _viewModel.ErrorMessage = "Failed to copy text to clipboard";
+            _toast?.ShowMessage("Failed to copy to clipboard", ToastType.Error);
         }
+    }
+
+    private async Task OnSaveEditAsync(string editedText)
+    {
+        _viewModel.EditedText = editedText;
+        _viewModel.SaveEdit();
+        _toast?.ShowMessage("Translation updated!", ToastType.Success);
+        await Task.CompletedTask;
+    }
+
+    private async Task OnRetranslateAsync()
+    {
+        _viewModel.ExitEditMode();
+        await OnTranslateAsync();
     }
 }

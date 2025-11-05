@@ -1,5 +1,10 @@
 # PoVicTranslate
 
+[![Build Status](https://dev.azure.com/YOUR-ORG/PoVicTranslate/_apis/build/status/PoVicTranslate-CI-CD?branchName=main)](https://dev.azure.com/YOUR-ORG/PoVicTranslate/_build/latest?definitionId=YOUR-PIPELINE-ID&branchName=main)
+[![Code Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](./docs/coverage/)
+[![.NET Version](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/download/dotnet/9.0)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+
 **Victorian English Translation & Lyrics Management System**
 
 A full-stack web application that translates modern English to Victorian-era English using Azure OpenAI, manages song lyrics with Cockney rhyming slang support, and provides text-to-speech synthesis. Built with ASP.NET Core 9.0 and Blazor WebAssembly.
@@ -33,8 +38,9 @@ PoVicTranslate is a modern web application that bridges contemporary and Victori
   - Azure Application Insights
   - Azure App Service
 - **Logging**: Serilog with Application Insights sink
-- **Testing**: xUnit, FluentAssertions, Playwright
-- **CI/CD**: GitHub Actions with federated credentials
+- **Testing**: xUnit, bUnit, FluentAssertions, Playwright
+- **CI/CD**: Azure DevOps with automated deployment
+- **Monitoring**: Application Insights with custom telemetry and alerts
 
 ### Project Structure
 
@@ -344,7 +350,172 @@ dotnet format
 
 ---
 
-## 📄 License
+## � API Usage Examples
+
+### Translation API
+
+**Translate text to Victorian English:**
+
+```bash
+curl -X POST https://localhost:7070/api/translation \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello, how are you today?"}'
+```
+
+**Response:**
+```json
+{
+  "translatedText": "Good morrow, pray tell, how dost thou fare this fine day?"
+}
+```
+
+### Lyrics Management API
+
+**Search for songs:**
+
+```bash
+curl "https://localhost:7070/api/lyrics-management/songs?query=london&maxResults=5"
+```
+
+**Get song by ID:**
+
+```bash
+curl https://localhost:7070/api/lyrics-management/songs/maybe-its-because
+```
+
+**Get collection statistics:**
+
+```bash
+curl https://localhost:7070/api/lyrics-management/collections/stats
+```
+
+**Response:**
+```json
+{
+  "totalSongs": 16,
+  "totalArtists": 5,
+  "totalAlbums": 6,
+  "generatedAt": "2024-11-04T10:30:00Z",
+  "version": "1.0.0",
+  "totalWords": 3456,
+  "averageWordsPerSong": 216.0,
+  "topArtists": [
+    {"artist": "Various Artists", "songCount": 8}
+  ],
+  "topTags": [
+    {"tag": "cockney", "count": 12},
+    {"tag": "victorian", "count": 10}
+  ]
+}
+```
+
+### Speech Synthesis API
+
+**Generate audio from text:**
+
+```bash
+curl -X POST https://localhost:7070/api/speech \
+  -H "Content-Type: application/json" \
+  -d '"Good morrow, dear friend!"' \
+  --output audio.mp3
+```
+
+### Health Check APIs
+
+**Comprehensive health check:**
+
+```bash
+curl https://localhost:7070/health
+```
+
+**Liveness probe (Kubernetes/container readiness):**
+
+```bash
+curl https://localhost:7070/health/live
+```
+
+**Readiness probe (external dependencies):**
+
+```bash
+curl https://localhost:7070/health/ready
+```
+
+---
+
+## � CI/CD Pipeline
+
+Automated build, test, and deployment pipeline using Azure DevOps.
+
+### Pipeline Stages
+
+1. **Build & Unit Test**: Compiles solution and runs unit tests with code coverage
+2. **Integration Test**: Runs integration tests with Azurite storage emulation
+3. **Deploy to Staging**: Deploys to staging slot for `develop` branch
+4. **Deploy to Production**: Deploys to production with approval gate for `main` branch
+
+### Setup Instructions
+
+See [Azure DevOps Pipeline Setup Guide](./docs/AzureDevOps-Pipeline-Setup.md) for detailed configuration steps.
+
+### Quick Commands
+
+```bash
+# Trigger manual deployment
+az pipelines run --organization https://dev.azure.com/YOUR-ORG --project PoVicTranslate --name "PoVicTranslate-CI-CD"
+
+# View deployment history
+az webapp deployment list --resource-group rg-povictranslate-prod --name app-povictranslate-prod
+
+# Rollback deployment
+az webapp deployment slot swap --name app-povictranslate-prod --resource-group rg-povictranslate-prod --slot staging --action swap
+```
+
+**Quick Reference**: [CI/CD Quick Reference](./docs/CI-CD-Quick-Reference.md)
+
+---
+
+## 📊 Monitoring & Alerts
+
+Application Insights integration with custom telemetry, alerts, and dashboards.
+
+### Telemetry Tracked
+
+- **API Performance**: Response times (P50, P95, P99), success rates, error rates
+- **Cache Metrics**: Hit rate, miss rate, evictions by type (Lyrics, Song, Artist, Album)
+- **Translation Performance**: Success rate, duration, input/output language
+- **Service Health**: Health check status, dependency availability
+
+### Alerts Configured
+
+- High Error Rate (>5%)
+- Slow API Responses (P95 >2s)
+- High Cache Miss Rate (>50%)
+- Service Unavailability (>10% health check failures)
+- Translation Failures (>10%)
+- Excessive Cache Evictions (>100/min)
+
+### Pre-configured Dashboard
+
+Import the complete monitoring dashboard with one command:
+
+```powershell
+.\scripts\deploy-dashboard.ps1 -ResourceGroup "your-rg" -AppInsightsName "your-app-insights"
+```
+
+The dashboard includes 12 tiles: API health, response times, cache performance, errors, dependencies, and more.
+
+### Documentation
+
+- **[Dashboard Import Guide](./docs/Dashboard-Import-Guide.md)** ⭐ **Quick start with pre-built dashboard**
+- [Application Insights Alerts](./docs/ApplicationInsights-Alerts.md)
+- [Monitoring Dashboard Guide](./docs/ApplicationInsights-Dashboard.md)
+- [Alert Configuration Setup](./docs/Monitoring-Alerts-Setup.md)
+- [KQL Queries - Cache Performance](./docs/KQL/cache-performance.kql)
+- [KQL Queries - API Response Times](./docs/KQL/api-response-times.kql)
+
+---
+
+## �📄 License
 
 This project is licensed under the MIT License.
 

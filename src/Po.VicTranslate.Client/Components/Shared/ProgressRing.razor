@@ -1,0 +1,76 @@
+@namespace Po.VicTranslate.Client.Components.Shared
+
+<div class="progress-ring-wrapper">
+    <svg class="progress-ring" width="@Size" height="@Size">
+        <circle
+            class="progress-ring-bg"
+            stroke="rgba(255, 255, 255, 0.1)"
+            stroke-width="@StrokeWidth"
+            fill="transparent"
+            r="@Radius"
+            cx="@Center"
+            cy="@Center" />
+        <circle
+            class="progress-ring-circle"
+            stroke="@GetColor()"
+            stroke-width="@StrokeWidth"
+            fill="transparent"
+            r="@Radius"
+            cx="@Center"
+            cy="@Center"
+            style="stroke-dasharray: @Circumference @Circumference; stroke-dashoffset: @GetOffset()" />
+    </svg>
+    <div class="progress-ring-text @GetTextClass()">
+        <div class="progress-count">@CurrentValue</div>
+        @if (ShowMax)
+        {
+            <div class="progress-max">/  @MaxValue</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int CurrentValue { get; set; }
+
+    [Parameter]
+    public int MaxValue { get; set; } = 200;
+
+    [Parameter]
+    public int Size { get; set; } = 60;
+
+    [Parameter]
+    public int StrokeWidth { get; set; } = 4;
+
+    [Parameter]
+    public bool ShowMax { get; set; } = false;
+
+    private int Radius => (Size - StrokeWidth) / 2;
+    private int Center => Size / 2;
+    private double Circumference => 2 * Math.PI * Radius;
+
+    private double GetOffset()
+    {
+        var percentage = Math.Min((double)CurrentValue / MaxValue, 1.0);
+        return Circumference - (percentage * Circumference);
+    }
+
+    private string GetColor()
+    {
+        var percentage = (double)CurrentValue / MaxValue;
+        
+        if (percentage <= 0.75) return "#51cf66"; // Green
+        if (percentage <= 0.95) return "#ffd43b"; // Yellow
+        return "#ff6b6b"; // Red
+    }
+
+    private string GetTextClass()
+    {
+        var percentage = (double)CurrentValue / MaxValue;
+        
+        if (percentage <= 0.75) return "text-safe";
+        if (percentage <= 0.95) return "text-warning";
+        if (percentage > 1.0) return "text-over";
+        return "text-danger";
+    }
+}

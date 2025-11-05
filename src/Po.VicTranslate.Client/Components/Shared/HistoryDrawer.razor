@@ -1,0 +1,77 @@
+@namespace Po.VicTranslate.Client.Components.Shared
+@using Po.VicTranslate.Client.Models
+
+<div class="history-overlay @(IsOpen ? "open" : "")" @onclick="OnClose"></div>
+<div class="history-drawer @(IsOpen ? "open" : "")">
+    <div class="drawer-header">
+        <h3>
+            <i class="fas fa-history"></i>
+            Recent Translations
+        </h3>
+        <button class="drawer-close" @onclick="OnClose" aria-label="Close history">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <div class="drawer-content">
+        @if (HistoryItems == null || !HistoryItems.Any())
+        {
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No translation history yet</p>
+                <small>Your recent translations will appear here</small>
+            </div>
+        }
+        else
+        {
+            <div class="history-list">
+                @foreach (var item in HistoryItems)
+                {
+                    <div class="history-item" id="history-item-@item.Id" @onclick="() => OnItemClick.InvokeAsync(item)">
+                        <div class="item-header">
+                            <span class="item-time">@item.Timestamp.ToString("h:mm tt")</span>
+                            <button class="item-delete" @onclick:stopPropagation @onclick="() => OnItemDelete.InvokeAsync(item.Id)">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                        <div class="item-preview">@item.InputPreview</div>
+                        <div class="item-arrow">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div class="item-translated">@item.TranslatedPreview</div>
+                    </div>
+                }
+            </div>
+            
+            @if (HistoryItems.Count > 0)
+            {
+                <div class="drawer-footer">
+                    <button class="clear-all-btn" @onclick="OnClearAll">
+                        <i class="fas fa-trash"></i>
+                        Clear All History
+                    </button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public List<TranslationHistoryItem>? HistoryItems { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback<TranslationHistoryItem> OnItemClick { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnItemDelete { get; set; }
+
+    [Parameter]
+    public EventCallback OnClearAll { get; set; }
+}

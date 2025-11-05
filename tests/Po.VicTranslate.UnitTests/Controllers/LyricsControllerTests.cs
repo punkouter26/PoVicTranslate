@@ -4,6 +4,7 @@ using Moq;
 using Po.VicTranslate.Api.Controllers;
 using Po.VicTranslate.Api.Models;
 using Po.VicTranslate.Api.Services;
+using Po.VicTranslate.Api.Services.Lyrics;
 using Xunit;
 
 namespace VictorianTranslator.UnitTests.Controllers;
@@ -12,13 +13,24 @@ public class LyricsControllerTests
 {
     private readonly Mock<ILyricsService> _mockLyricsService;
     private readonly Mock<ILyricsManagementService> _mockManagementService;
+    private readonly Mock<ILyricsUtilityService> _mockLyricsUtility;
     private readonly LyricsController _controller;
 
     public LyricsControllerTests()
     {
         _mockLyricsService = new Mock<ILyricsService>();
         _mockManagementService = new Mock<ILyricsManagementService>();
-        _controller = new LyricsController(_mockLyricsService.Object, _mockManagementService.Object);
+        _mockLyricsUtility = new Mock<ILyricsUtilityService>();
+        
+        // Setup default behavior for LimitWords to pass through
+        _mockLyricsUtility
+            .Setup(x => x.LimitWords(It.IsAny<string>(), It.IsAny<int>()))
+            .Returns<string, int>((text, maxWords) => text);
+        
+        _controller = new LyricsController(
+            _mockLyricsService.Object,
+            _mockManagementService.Object,
+            _mockLyricsUtility.Object);
     }
 
     [Fact]

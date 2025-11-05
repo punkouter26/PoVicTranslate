@@ -5,6 +5,10 @@
 @baseUrl = https://localhost:5001
 @baseUrlHttp = http://localhost:5000
 
+#####################################
+# Health Checks
+#####################################
+
 ### Health Check - Liveness
 GET {{baseUrl}}/api/health/live
 Accept: application/json
@@ -23,8 +27,12 @@ Accept: application/json
 
 ###
 
+#####################################
+# Translation API
+#####################################
+
 ### Translation - Simple Text
-POST {{baseUrl}}/translation/translate
+POST {{baseUrl}}/api/Translation
 Content-Type: application/json
 
 {
@@ -34,7 +42,7 @@ Content-Type: application/json
 ###
 
 ### Translation - Long Text
-POST {{baseUrl}}/translation/translate
+POST {{baseUrl}}/api/Translation
 Content-Type: application/json
 
 {
@@ -43,8 +51,8 @@ Content-Type: application/json
 
 ###
 
-### Translation - Empty Text (Should Fail)
-POST {{baseUrl}}/translation/translate
+### Translation - Empty Text (Should Return 400)
+POST {{baseUrl}}/api/Translation
 Content-Type: application/json
 
 {
@@ -54,7 +62,7 @@ Content-Type: application/json
 ###
 
 ### Translation - Special Characters
-POST {{baseUrl}}/translation/translate
+POST {{baseUrl}}/api/Translation
 Content-Type: application/json
 
 {
@@ -63,64 +71,103 @@ Content-Type: application/json
 
 ###
 
-### Lyrics - Get All Lyrics
-GET {{baseUrl}}/lyrics
+#####################################
+# Lyrics API (Public)
+#####################################
+
+### Lyrics - Get Available Songs
+GET {{baseUrl}}/api/Lyrics
 Accept: application/json
 
 ###
 
-### Lyrics - Get by ID
-GET {{baseUrl}}/lyrics/{{lyricId}}
+### Lyrics - Get by Song Filename
+GET {{baseUrl}}/api/Lyrics/wu_tang_clan_-_c.r.e.a.m
 Accept: application/json
 
 ###
 
-### Lyrics - Create New
-POST {{baseUrl}}/lyrics
-Content-Type: application/json
+#####################################
+# Lyrics Management API
+#####################################
 
-{
-  "title": "Test Song",
-  "artist": "Test Artist",
-  "originalLyrics": "Hello world, how are you?",
-  "translatedLyrics": "Good morrow, fair world, how dost thou fare?",
-  "audioUrl": ""
-}
-
-###
-
-### Lyrics - Update Existing
-PUT {{baseUrl}}/lyrics/{{lyricId}}
-Content-Type: application/json
-
-{
-  "id": "{{lyricId}}",
-  "title": "Updated Test Song",
-  "artist": "Updated Artist",
-  "originalLyrics": "Hello world, how are you?",
-  "translatedLyrics": "Good morrow, fair world, how dost thou fare?",
-  "audioUrl": "https://example.com/audio.mp3"
-}
-
-###
-
-### Lyrics - Delete
-DELETE {{baseUrl}}/lyrics/{{lyricId}}
-
-###
-
-### Audio Synthesis - Generate Speech
-POST {{baseUrl}}/audio/synthesize
-Content-Type: application/json
-
-{
-  "text": "Good morrow, fair world, how dost thou fare?"
-}
-
-###
-
-### Diagnostic - System Status
-GET {{baseUrl}}/api/diagnostic
+### Lyrics Management - Get Full Collection
+GET {{baseUrl}}/api/lyrics-management/collections
 Accept: application/json
+
+###
+
+### Lyrics Management - Search Songs (Empty Query)
+GET {{baseUrl}}/api/lyrics-management/songs?maxResults=10
+Accept: application/json
+
+###
+
+### Lyrics Management - Search Songs (With Query)
+GET {{baseUrl}}/api/lyrics-management/songs?query=love&maxResults=5
+Accept: application/json
+
+###
+
+### Lyrics Management - Get Song by ID
+GET {{baseUrl}}/api/lyrics-management/songs/wu_tang_clan_-_c.r.e.a.m
+Accept: application/json
+
+###
+
+### Lyrics Management - Get All Artists
+GET {{baseUrl}}/api/lyrics-management/artists
+Accept: application/json
+
+###
+
+### Lyrics Management - Get All Albums
+GET {{baseUrl}}/api/lyrics-management/albums
+Accept: application/json
+
+###
+
+### Lyrics Management - Get Collection Statistics
+GET {{baseUrl}}/api/lyrics-management/collections/stats
+Accept: application/json
+
+###
+
+### Lyrics Management - Regenerate Collection
+POST {{baseUrl}}/api/lyrics-management/collections/regenerate
+
+###
+
+#####################################
+# Speech Synthesis API
+#####################################
+
+### Speech - Test Configuration
+GET {{baseUrl}}/api/Speech/test-config
+Accept: application/json
+
+###
+
+### Speech - Synthesize Speech
+POST {{baseUrl}}/api/Speech
+Content-Type: application/json
+
+"Good morrow, fair world, how dost thou fare?"
+
+###
+
+### Speech - Synthesize Empty Text (Should Return 400)
+POST {{baseUrl}}/api/Speech
+Content-Type: application/json
+
+""
+
+###
+
+### Speech - Synthesize Long Text
+POST {{baseUrl}}/api/Speech
+Content-Type: application/json
+
+"Good morrow, kind sir. Prithee, might I inquire as to thy well-being on this fine day? The weather doth appear most favorable for a leisurely promenade through the verdant gardens."
 
 ###
