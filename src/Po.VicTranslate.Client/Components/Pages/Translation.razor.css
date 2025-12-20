@@ -97,10 +97,9 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--text-gray);
+    flex-wrap: wrap;
 }
 
 .stat-item {
@@ -108,15 +107,35 @@
     align-items: center;
     gap: 0.5rem;
     font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-gray);
+    background: rgba(255, 215, 0, 0.08);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-pill);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    transition: all var(--transition-smooth);
 }
 
-.stat-item i {
-    color: var(--primary-gold);
+.stat-item:hover {
+    background: rgba(255, 215, 0, 0.12);
+    border-color: rgba(255, 215, 0, 0.25);
+    transform: translateY(-1px);
+}
+
+.stat-icon {
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.3));
+}
+
+.stat-text {
+    color: var(--text-light);
+    font-weight: 500;
 }
 
 .stat-divider {
     color: var(--primary-gold);
-    opacity: 0.5;
+    opacity: 0.4;
+    font-size: 0.8rem;
 }
 
 /* Input Section */
@@ -139,8 +158,13 @@
 }
 
 .shuffle-btn {
-    min-width: 120px;
+    min-width: 140px;
     white-space: nowrap;
+}
+
+.btn-icon {
+    font-size: 1.1rem;
+    filter: none;
 }
 
 .custom-input-wrapper {
@@ -504,6 +528,11 @@
     gap: 1rem;
     font-weight: 500;
     animation: errorPulse 2s ease-in-out infinite;
+}
+
+.error-icon {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 4px rgba(255, 68, 68, 0.3));
 }
 
 .error-content {

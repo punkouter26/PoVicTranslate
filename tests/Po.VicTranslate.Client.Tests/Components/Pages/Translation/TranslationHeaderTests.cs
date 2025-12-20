@@ -40,9 +40,11 @@ public class TranslationHeaderTests : TestContext
         // Act
         var cut = RenderComponent<Po.VicTranslate.Client.Components.Pages.Translation.TranslationHeader>();
 
-        // Assert
-        cut.FindAll(".fa-music").Should().HaveCount(1);
-        cut.FindAll(".fa-magic").Should().HaveCount(1);
-        cut.FindAll(".fa-crown").Should().HaveCount(1);
+        // Assert - Now using emoji icons instead of Font Awesome
+        var statIcons = cut.FindAll(".stat-icon");
+        statIcons.Should().HaveCount(3);
+        statIcons[0].TextContent.Should().Contain("🎵");
+        statIcons[1].TextContent.Should().Contain("✨");
+        statIcons[2].TextContent.Should().Contain("👑");
     }
 }
