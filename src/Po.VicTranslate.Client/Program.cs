@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Po.VicTranslate.Client;
 using Po.VicTranslate.Client.Services;
+using Radzen;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -28,5 +29,11 @@ builder.Services.AddScoped<ITranslationOrchestrator, TranslationOrchestrator>();
 // Phase 1 UI/UX Enhancement Services
 builder.Services.AddScoped<HistoryService>();
 builder.Services.AddScoped<FuzzyMatchService>();
+
+// Radzen Services
+builder.Services.AddScoped<DialogService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<TooltipService>();
+builder.Services.AddScoped<ContextMenuService>();
 
 await builder.Build().RunAsync();

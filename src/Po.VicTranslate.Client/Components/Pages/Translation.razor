@@ -6,106 +6,168 @@
 @using Po.VicTranslate.Client.Components.Pages.Translation
 @inject ITranslationOrchestrator TranslationOrchestrator
 @inject HistoryService HistoryService
+@inject HttpClient HttpClient
+@inject NotificationService NotificationService
 @rendermode InteractiveWebAssembly
 
 <PageTitle>PoVicTranslate</PageTitle>
 
-<!-- Toast Notification -->
-<Toast @ref="_toast" Position="ToastPosition.TopRight" />
+<div class="translation-page">
+    <!-- Compact Header -->
+    <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="0.5rem" class="page-header">
+        <h1 class="page-title">
+            <span class="title-icon">✨</span>
+            Street → Sophisticated
+        </h1>
+        <p class="page-subtitle">Transform rap lyrics into Victorian elegance</p>
+    </RadzenStack>
 
-<div class="main-wrapper animate-fade-in">
-    <div class="urban-container">
+    <!-- Main Translation Card -->
+    <RadzenCard class="translation-card">
         @if(_viewModel.IsLoading)
         {
             <div class="loading-overlay">
-                <div class="loading-spinner"></div>
-                <div class="loading-text">Initializing the culture...</div>
+                <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large" class="loading-spinner" />
+                <span class="loading-text">Initializing...</span>
             </div>
         }
 
-        <TranslationHeader />
-        
-        <div class="input-section">
-            <SongSelector 
-                AvailableSongs="@_viewModel.AvailableSongs"
-                OnSongSelected="@OnSongSelectedAsync"
-                OnRandomClick="@OnLoadRandomSongAsync" />
+        <!-- Input Tabs: Song Selection OR Custom Text -->
+        <RadzenTabs @bind-SelectedIndex="@_selectedTabIndex" class="input-tabs">
+            <Tabs>
+                <RadzenTabsItem Text="🎵 Select Song">
+                    <RadzenStack Gap="1rem" class="tab-content">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" class="song-selector-row">
+                            <RadzenDropDown @bind-Value="@_selectedSong" 
+                                            Data="@_viewModel.AvailableSongs" 
+                                            Placeholder="Choose a Wu-Tang classic..."
+                                            AllowClear="true"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            Change="@OnSongSelectedAsync"
+                                            class="song-dropdown" />
+                            <RadzenButton Icon="shuffle" Text="Random" ButtonStyle="ButtonStyle.Secondary"
+                                          Click="@OnLoadRandomSongAsync" Variant="Variant.Outlined"
+                                          class="random-btn" />
+                        </RadzenStack>
+                        
+                        @if (!string.IsNullOrEmpty(_viewModel.InputText))
+                        {
+                            <RadzenCard class="lyrics-preview">
+                                <RadzenText TextStyle="TextStyle.Body2" class="preview-label">Preview:</RadzenText>
+                                <RadzenText class="preview-text">@_viewModel.InputText.Substring(0, Math.Min(200, _viewModel.InputText.Length))@(_viewModel.InputText.Length > 200 ? "..." : "")</RadzenText>
+                            </RadzenCard>
+                        }
+                    </RadzenStack>
+                </RadzenTabsItem>
+                
+                <RadzenTabsItem Text="✍️ Custom Text">
+                    <RadzenStack Gap="0.75rem" class="tab-content">
+                        <div class="textarea-container">
+                            <RadzenTextArea @bind-Value="@_viewModel.InputText" 
+                                            Placeholder="Enter your text here... We'll make it sound royal 👑"
+                                            Rows="5"
+                                            MaxLength="2000"
+                                            Disabled="@_viewModel.IsTranslating"
+                                            class="custom-textarea" />
+                            <div class="word-counter-badge">
+                                <RadzenBadge BadgeStyle="@(_viewModel.WordCount >= 200 ? BadgeStyle.Danger : BadgeStyle.Info)" 
+                                             Text="@($"{_viewModel.WordCount}/200 words")" />
+                            </div>
+                        </div>
+                    </RadzenStack>
+                </RadzenTabsItem>
+            </Tabs>
+        </RadzenTabs>
 
-            <div class="section-divider">
-                <span class="divider-text">OR ENTER TEXT</span>
-                <div class="divider-line"></div>
-            </div>
+        <!-- Translate Button -->
+        <RadzenStack AlignItems="AlignItems.Center" class="action-row">
+            <RadzenButton Text="@(_viewModel.IsTranslating ? "Translating..." : "Translate")" 
+                          Icon="@(_viewModel.IsTranslating ? "" : "auto_awesome")"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Size="ButtonSize.Large"
+                          Click="@OnTranslateAsync"
+                          Disabled="@(!_viewModel.CanTranslate)"
+                          IsBusy="@_viewModel.IsTranslating"
+                          class="translate-btn" />
+        </RadzenStack>
 
-            <CustomLyricsInput 
-                @bind-CurrentText="@_viewModel.InputText"
-                WordCount="@_viewModel.WordCount"
-                IsDisabled="@_viewModel.IsTranslating" />
-        </div>
-        
-        <div class="action-section">
-            <button class="urban-btn primary-action" @onclick="OnTranslateAsync" disabled="@(!_viewModel.CanTranslate)">
-                @if (_viewModel.IsTranslating)
-                {
-                    <div class="btn-content translating">
-                        <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
-                        <span>Translating...</span>
-                    </div>
-                }
-                else
-                {
-                    <div class="btn-content">
-                        <span class="btn-icon">✨</span>
-                        <span>Translate</span>
-                    </div>
-                }
-            </button>
-        </div>
-
+        <!-- Translation Results -->
         @if (!string.IsNullOrEmpty(_viewModel.TranslatedText))
         {
-            <TranslationResults 
-                TranslatedText="@_viewModel.TranslatedText"
-                IsEditMode="@_viewModel.IsEditMode"
-                OnCopyClick="@OnCopyToClipboardAsync"
-                OnEnterEdit="@(() => _viewModel.EnterEditMode())"
-                OnSaveEdit="@OnSaveEditAsync"
-                OnCancelEdit="@(() => _viewModel.CancelEdit())"
-                OnRetranslate="@OnRetranslateAsync" />
+            <RadzenCard class="results-card">
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Start" class="results-header">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenIcon Icon="auto_stories" class="results-icon" />
+                        <RadzenText TextStyle="TextStyle.H6" class="results-title">Victorian Translation</RadzenText>
+                    </RadzenStack>
+                    
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                        <RadzenButton Icon="content_copy" ButtonStyle="ButtonStyle.Light" 
+                                      Variant="Variant.Text" Size="ButtonSize.Small"
+                                      Click="@OnCopyToClipboardAsync"
+                                      title="Copy to clipboard" />
+                        <RadzenButton Icon="@(_isPlaying ? "stop" : "volume_up")" 
+                                      ButtonStyle="@(_isPlaying ? ButtonStyle.Warning : ButtonStyle.Info)" 
+                                      Variant="Variant.Text" Size="ButtonSize.Small"
+                                      Click="@OnSpeakAsync"
+                                      IsBusy="@_isSpeechLoading"
+                                      Disabled="@_isSpeechLoading"
+                                      title="@(_isPlaying ? "Stop" : "Listen")" />
+                    </RadzenStack>
+                </RadzenStack>
+                
+                <div class="results-content">
+                    @if (_viewModel.IsEditMode)
+                    {
+                        <RadzenTextArea @bind-Value="@_viewModel.EditedText" Rows="6" class="edit-textarea" />
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.End" class="edit-actions">
+                            <RadzenButton Text="Save" Icon="check" ButtonStyle="ButtonStyle.Success" 
+                                          Size="ButtonSize.Small" Click="@OnSaveEditAsync" />
+                            <RadzenButton Text="Cancel" Icon="close" ButtonStyle="ButtonStyle.Light" 
+                                          Variant="Variant.Outlined" Size="ButtonSize.Small" 
+                                          Click="@(() => _viewModel.CancelEdit())" />
+                        </RadzenStack>
+                    }
+                    else
+                    {
+                        <p class="translated-text" @ondblclick="@(() => _viewModel.EnterEditMode())">@_viewModel.TranslatedText</p>
+                        <RadzenText TextStyle="TextStyle.Caption" class="edit-hint">Double-click to edit</RadzenText>
+                    }
+                </div>
+            </RadzenCard>
         }
 
+        <!-- Error Display -->
         @if (!string.IsNullOrEmpty(_viewModel.ErrorMessage))
         {
-            <div class="error-section animate-bounce">
-                <div class="urban-error">
-                    <span class="error-icon">⚠️</span>
-                    <div class="error-content">
-                        <div class="error-title">Oops! Something went sideways</div>
-                        <div class="error-message">@_viewModel.ErrorMessage</div>
-                    </div>
-                </div>
-            </div>
+            <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Dark"
+                         AllowClose="true" Close="@(() => _viewModel.ErrorMessage = string.Empty)"
+                         class="error-alert">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="error_outline" />
+                    <span>@_viewModel.ErrorMessage</span>
+                </RadzenStack>
+            </RadzenAlert>
         }
-    </div>
+    </RadzenCard>
 </div>
-
-<!-- Floating Action Button for Mobile -->
-<FloatingActionButton 
-    OnClick="@OnTranslateAsync"
-    IsDisabled="@(!_viewModel.CanTranslate)"
-    IsLoading="@_viewModel.IsTranslating"
-/>
 
 @code {
     private readonly TranslationViewModel _viewModel = new();
-    private Toast? _toast;
+    private int _selectedTabIndex = 0;
+    private string? _selectedSong;
+    private bool _isPlaying = false;
+    private bool _isSpeechLoading = false;
 
     protected override async Task OnInitializedAsync()
     {
         await TranslationOrchestrator.InitializeAsync(_viewModel);
     }
 
-    private async Task OnSongSelectedAsync(string selectedSong)
+    private async Task OnSongSelectedAsync(object? value)
     {
+        var selectedSong = value?.ToString();
         if (string.IsNullOrEmpty(selectedSong))
         {
             _viewModel.InputText = string.Empty;
@@ -118,6 +180,7 @@
     private async Task OnLoadRandomSongAsync()
     {
         await TranslationOrchestrator.LoadRandomSongAsync(_viewModel);
+        _selectedSong = null; // Clear dropdown since it's random
     }
 
     private async Task OnTranslateAsync()
@@ -129,13 +192,13 @@
             if (!string.IsNullOrWhiteSpace(_viewModel.TranslatedText))
             {
                 await HistoryService.AddItemAsync(_viewModel.InputText, _viewModel.TranslatedText);
-                _toast?.ShowMessage("Done", ToastType.Success);
+                NotificationService.Notify(NotificationSeverity.Success, "Translation Complete", "Your text has been transformed!");
             }
         }
         catch (Exception ex)
         {
             _viewModel.ErrorMessage = ex.Message;
-            _toast?.ShowMessage($"Translation failed: {ex.Message}", ToastType.Error);
+            NotificationService.Notify(NotificationSeverity.Error, "Translation Failed", ex.Message);
         }
     }
 
@@ -144,26 +207,70 @@
         var success = await TranslationOrchestrator.CopyToClipboardAsync(_viewModel.TranslatedText);
         if (success)
         {
-            _toast?.ShowMessage("Copied", ToastType.Success);
+            NotificationService.Notify(NotificationSeverity.Success, "Copied!", "Text copied to clipboard");
         }
         else
         {
-            _viewModel.ErrorMessage = "Failed to copy text to clipboard";
-            _toast?.ShowMessage("Copy failed", ToastType.Error);
+            NotificationService.Notify(NotificationSeverity.Error, "Copy Failed", "Could not copy to clipboard");
         }
     }
 
-    private async Task OnSaveEditAsync(string editedText)
+    private async Task OnSaveEditAsync()
     {
-        _viewModel.EditedText = editedText;
         _viewModel.SaveEdit();
-        _toast?.ShowMessage("Translation updated!", ToastType.Success);
+        NotificationService.Notify(NotificationSeverity.Success, "Saved", "Translation updated");
         await Task.CompletedTask;
     }
 
-    private async Task OnRetranslateAsync()
+    private async Task OnSpeakAsync()
     {
-        _viewModel.ExitEditMode();
-        await OnTranslateAsync();
+        if (_isPlaying)
+        {
+            _isPlaying = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_viewModel.TranslatedText))
+            return;
+
+        _isSpeechLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await HttpClient.PostAsJsonAsync("api/speech/synthesize", _viewModel.TranslatedText);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var audioBytes = await response.Content.ReadAsByteArrayAsync();
+                _isPlaying = true;
+                StateHasChanged();
+                
+                // Play audio using JS interop (existing playAudio function)
+                await PlayAudioAsync(audioBytes);
+                _isPlaying = false;
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Speech Unavailable", "Text-to-speech service is currently unavailable");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Speech Error", ex.Message);
+        }
+        finally
+        {
+            _isSpeechLoading = false;
+            _isPlaying = false;
+            StateHasChanged();
+        }
+    }
+
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private async Task PlayAudioAsync(byte[] audioBytes)
+    {
+        await JSRuntime.InvokeVoidAsync("playAudio", audioBytes);
     }
 }

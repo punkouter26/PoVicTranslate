@@ -14,6 +14,8 @@ public class HistoryService
     private List<TranslationHistoryItem> _cache = new();
     private bool _isInitialized;
 
+    public event Action? OnChange;
+
     public HistoryService(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;
@@ -55,6 +57,7 @@ public class HistoryService
         }
 
         await SaveToStorageAsync();
+        OnChange?.Invoke();
     }
 
     public async Task RemoveItemAsync(string id)
@@ -66,12 +69,14 @@ public class HistoryService
 
         _cache.RemoveAll(x => x.Id == id);
         await SaveToStorageAsync();
+        OnChange?.Invoke();
     }
 
     public async Task ClearHistoryAsync()
     {
         _cache.Clear();
         await SaveToStorageAsync();
+        OnChange?.Invoke();
     }
 
     private async Task LoadFromStorageAsync()
