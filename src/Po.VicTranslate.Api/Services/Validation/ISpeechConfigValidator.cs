@@ -13,7 +13,7 @@ public interface ISpeechConfigValidator
     /// <param name="settings">The API settings to validate</param>
     /// <returns>True if valid, false otherwise</returns>
     bool IsValid(ApiSettings settings);
-    
+
     /// <summary>
     /// Gets a descriptive error message for invalid settings
     /// </summary>

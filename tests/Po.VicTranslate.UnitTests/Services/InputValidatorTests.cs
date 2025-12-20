@@ -4,7 +4,7 @@ using Moq;
 using Po.VicTranslate.Api.Services.Validation;
 using Xunit;
 
-namespace VictorianTranslator.UnitTests.Services;
+namespace Po.VicTranslate.UnitTests.Services;
 
 public class InputValidatorTests
 {

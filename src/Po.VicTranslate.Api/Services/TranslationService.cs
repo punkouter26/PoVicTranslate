@@ -31,7 +31,7 @@ public class TranslationService : ITranslationService
     {
         ArgumentNullException.ThrowIfNull(apiSettings);
         _logger = logger;
-        
+
         var settings = apiSettings.Value;
 
         if (string.IsNullOrWhiteSpace(settings.AzureOpenAIApiKey) ||
@@ -46,9 +46,9 @@ public class TranslationService : ITranslationService
         {
             // Initialize Azure OpenAI client
             var openAIClient = new AzureOpenAIClient(
-                new Uri(settings.AzureOpenAIEndpoint), 
+                new Uri(settings.AzureOpenAIEndpoint),
                 new AzureKeyCredential(settings.AzureOpenAIApiKey));
-            
+
             _logger.LogInformation("AzureOpenAIClient initialized successfully with endpoint {Endpoint}", settings.AzureOpenAIEndpoint);
 
             // Initialize extracted service classes (Template Method pattern)

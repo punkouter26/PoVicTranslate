@@ -17,7 +17,7 @@ public class CacheService : ICacheService
     private long _evictions;
 
     public CacheService(
-        IMemoryCache cache, 
+        IMemoryCache cache,
         ILogger<CacheService> logger,
         ICustomTelemetryService? telemetryService = null)
     {
@@ -32,23 +32,23 @@ public class CacheService : ICacheService
         {
             Interlocked.Increment(ref _hits);
             _logger.LogDebug("Cache HIT for key: {CacheKey}", key);
-            
+
             // Track cache hit telemetry
             _telemetryService?.TrackCacheHit(key, GetCacheType(key));
-            
+
             return cachedValue!;
         }
 
         Interlocked.Increment(ref _misses);
         _logger.LogDebug("Cache MISS for key: {CacheKey}", key);
-        
+
         // Track cache miss telemetry
         _telemetryService?.TrackCacheMiss(key, GetCacheType(key));
 
         var value = await factory();
 
         var cacheEntryOptions = new MemoryCacheEntryOptions();
-        
+
         if (absoluteExpiration.HasValue)
         {
             cacheEntryOptions.AbsoluteExpirationRelativeToNow = absoluteExpiration.Value;
@@ -65,17 +65,17 @@ public class CacheService : ICacheService
             Interlocked.Increment(ref _evictions);
             _cacheKeys.TryRemove(evictedKey.ToString()!, out _);
             _logger.LogDebug("Cache entry evicted: {CacheKey}, Reason: {Reason}", evictedKey, reason);
-            
+
             // Track eviction telemetry
             _telemetryService?.TrackCacheEviction(
-                evictedKey.ToString()!, 
-                GetCacheType(evictedKey.ToString()!), 
+                evictedKey.ToString()!,
+                GetCacheType(evictedKey.ToString()!),
                 reason.ToString());
         });
 
         _cache.Set(key, value, cacheEntryOptions);
         _cacheKeys.TryAdd(key, 0);
-        
+
         _logger.LogInformation("Cached new entry with key: {CacheKey}", key);
         return value;
     }
@@ -90,7 +90,7 @@ public class CacheService : ICacheService
     public void RemoveByPrefix(string prefix)
     {
         var keysToRemove = _cacheKeys.Keys.Where(k => k.StartsWith(prefix)).ToList();
-        
+
         foreach (var key in keysToRemove)
         {
             Remove(key);
@@ -102,7 +102,7 @@ public class CacheService : ICacheService
     public void Clear()
     {
         var allKeys = _cacheKeys.Keys.ToList();
-        
+
         foreach (var key in allKeys)
         {
             _cache.Remove(key);
@@ -132,7 +132,7 @@ public class CacheService : ICacheService
             return "Artist";
         if (key.StartsWith("album:", StringComparison.OrdinalIgnoreCase))
             return "Album";
-        
+
         return "Other";
     }
 }

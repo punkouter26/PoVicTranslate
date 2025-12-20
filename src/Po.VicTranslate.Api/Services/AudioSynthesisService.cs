@@ -34,11 +34,11 @@ public class AudioSynthesisService : IAudioSynthesisService
 
         _logger.LogInformation("Initializing Azure Speech Service with Region: {Region}", settings.AzureSpeechRegion);
         _speechConfig = SpeechConfig.FromSubscription(settings.AzureSpeechSubscriptionKey, settings.AzureSpeechRegion);
-        
+
         // Try using a more standard British English voice that's widely available
         _speechConfig.SpeechSynthesisVoiceName = "en-GB-RyanNeural";
         _logger.LogInformation("Using voice: {Voice}", _speechConfig.SpeechSynthesisVoiceName);
-        
+
         // Use standard MP3 format for better compatibility
         _speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3);
     }
@@ -46,8 +46,8 @@ public class AudioSynthesisService : IAudioSynthesisService
     public async Task<byte[]> SynthesizeSpeechAsync(string text)
     {
         _logger.LogInformation("Starting speech synthesis for text: '{Text}'", text);
-        _logger.LogInformation("Using voice: {Voice}, Region: {Region}", 
-            _speechConfig.SpeechSynthesisVoiceName, 
+        _logger.LogInformation("Using voice: {Voice}, Region: {Region}",
+            _speechConfig.SpeechSynthesisVoiceName,
             _speechConfig.Region);
 
         using (var synthesizer = new SpeechSynthesizer(_speechConfig, null))
@@ -67,13 +67,13 @@ public class AudioSynthesisService : IAudioSynthesisService
             if (result.Reason == ResultReason.SynthesizingAudioCompleted)
             {
                 _logger.LogInformation("Speech synthesis completed successfully. Audio data length: {Length} bytes", result.AudioData?.Length ?? 0);
-                
+
                 // Directly return the audio data from the result
                 if (result.AudioData != null && result.AudioData.Length > 0)
                 {
                     return result.AudioData;
                 }
-                
+
                 _logger.LogWarning("Audio data is null or empty, falling back to stream reading");
                 using (var audioStream = AudioDataStream.FromResult(result))
                 {
@@ -94,7 +94,7 @@ public class AudioSynthesisService : IAudioSynthesisService
                 var cancellation = SpeechSynthesisCancellationDetails.FromResult(result);
                 _logger.LogError("Speech synthesis cancelled: Reason={Reason}, ErrorCode={ErrorCode}, ErrorDetails={ErrorDetails}",
                     cancellation.Reason, cancellation.ErrorCode, cancellation.ErrorDetails);
-                
+
                 // Provide more specific error messages
                 var errorMessage = cancellation.ErrorCode switch
                 {
@@ -106,7 +106,7 @@ public class AudioSynthesisService : IAudioSynthesisService
                     CancellationErrorCode.ServiceTimeout => "Service timeout. Please try again.",
                     _ => $"Speech synthesis cancelled: {cancellation.Reason}. ErrorCode: {cancellation.ErrorCode}. Details: {cancellation.ErrorDetails}"
                 };
-                
+
                 throw new Exception(errorMessage);
             }
             else

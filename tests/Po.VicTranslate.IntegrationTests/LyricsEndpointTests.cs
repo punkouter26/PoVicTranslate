@@ -3,7 +3,7 @@ using FluentAssertions;
 using System.Net;
 using Xunit;
 
-namespace VictorianTranslator.IntegrationTests;
+namespace Po.VicTranslate.IntegrationTests;
 
 public class LyricsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 {

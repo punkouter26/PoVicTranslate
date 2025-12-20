@@ -5,7 +5,7 @@ using Moq;
 using Po.VicTranslate.Api.Services.Caching;
 using Xunit;
 
-namespace VictorianTranslator.UnitTests.Services;
+namespace Po.VicTranslate.UnitTests.Services;
 
 public class CacheServiceTests : IDisposable
 {
@@ -54,7 +54,7 @@ public class CacheServiceTests : IDisposable
         // Arrange
         var key = "test-key";
         var expectedValue = "test-value";
-        
+
         // First call to populate cache
         await _cacheService.GetOrCreateAsync(
             key,
@@ -138,7 +138,7 @@ public class CacheServiceTests : IDisposable
     {
         // Arrange
         var key = "test-key";
-        
+
         // First call - miss
         await _cacheService.GetOrCreateAsync(
             key,

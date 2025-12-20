@@ -1,6 +1,6 @@
 /* PoVicTranslate Urban Design System */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Permanent+Marker&display=swap');
+/* External fonts removed for a leaner UI */
 
 :root {
     /* Urban Color Palette */
@@ -40,8 +40,8 @@
     --info-bg: rgba(0, 170, 255, 0.1);
     
     /* Typography */
-    --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-family-display: 'Permanent Marker', cursive;
+    --font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-family-display: var(--font-family-base);
     --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     
     /* Spacing & Layout */

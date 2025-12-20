@@ -3,7 +3,7 @@ using FluentAssertions;
 using System.Net;
 using Xunit;
 
-namespace VictorianTranslator.IntegrationTests;
+namespace Po.VicTranslate.IntegrationTests;
 
 /// <summary>
 /// REQUIRED: Integration tests for mandatory /api/health endpoint.
@@ -52,7 +52,7 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         var startTime = DateTime.UtcNow;
 
         // Act
-        var response = await _client.GetAsync("/api/health", TestContext.Current.CancellationToken);
+        _ = await _client.GetAsync("/api/health", TestContext.Current.CancellationToken);
 
         // Assert - health check should respond within 5 seconds
         var duration = DateTime.UtcNow - startTime;

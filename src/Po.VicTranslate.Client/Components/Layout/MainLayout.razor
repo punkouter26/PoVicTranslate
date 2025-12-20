@@ -1,7 +1,6 @@
-@namespace VictorianTranslator.Client.Components.Layout
+@namespace Po.VicTranslate.Client.Components.Layout
 @inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
-@inject HistoryService HistoryService
 
 <RadzenLayout>
     <!-- Top Header -->
@@ -10,7 +9,6 @@
             <!-- Brand -->
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
                 <RadzenLink Path="/" class="brand-link">
-                    <span class="brand-icon">👑</span>
                     <span class="brand-text">PoVicTranslate</span>
                 </RadzenLink>
             </RadzenStack>
@@ -22,9 +20,6 @@
                     <RadzenButton Text="Translate" Icon="translate" ButtonStyle="ButtonStyle.Light" 
                                   Variant="Variant.Text" Click="@(() => NavigationManager.NavigateTo("/"))" 
                                   class="@GetNavBtnClass("/")" />
-                    <RadzenButton Text="History" Icon="history" ButtonStyle="ButtonStyle.Light" 
-                                  Variant="Variant.Text" Click="@ToggleHistoryDrawer"
-                                  class="nav-btn" />
                 </RadzenStack>
                 
                 <!-- Mobile Menu Button -->
@@ -41,10 +36,6 @@
                           Variant="Variant.Text" Size="ButtonSize.Large"
                           Click="@(() => { NavigationManager.NavigateTo("/"); _mobileMenuOpen = false; })" 
                           class="@(IsActive("/") ? "mobile-nav-btn active" : "mobile-nav-btn")" />
-            <RadzenButton Text="History" Icon="history" ButtonStyle="ButtonStyle.Light" 
-                          Variant="Variant.Text" Size="ButtonSize.Large"
-                          Click="@(() => { ToggleHistoryDrawer(); _mobileMenuOpen = false; })" 
-                          class="mobile-nav-btn" />
         </RadzenStack>
     </RadzenSidebar>
 
@@ -55,61 +46,12 @@
         </div>
     </RadzenBody>
 
-    <!-- Footer -->
-    <RadzenFooter>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="1rem" class="footer-content">
-            <span class="footer-tagline">Transform your flow into sophistication</span>
-            <span class="footer-divider">•</span>
-            <span class="footer-credits">Powered by Azure AI</span>
-        </RadzenStack>
-    </RadzenFooter>
 </RadzenLayout>
 
 <!-- Radzen Components -->
 <RadzenDialog />
 <RadzenNotification />
 <RadzenTooltip />
-
-<!-- History Drawer (Custom Implementation) -->
-<div class="history-overlay @(_historyDrawerOpen ? "open" : "")" @onclick="@(() => _historyDrawerOpen = false)"></div>
-<div class="history-drawer @(_historyDrawerOpen ? "open" : "")">
-    <div class="drawer-header">
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
-            <RadzenIcon Icon="history" />
-            <span>Recent Translations</span>
-        </RadzenStack>
-        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" 
-                      Click="@(() => _historyDrawerOpen = false)" Size="ButtonSize.Small" />
-    </div>
-    <div class="drawer-content">
-        @if (_historyItems == null || !_historyItems.Any())
-        {
-            <div class="empty-state">
-                <RadzenIcon Icon="inbox" class="empty-icon" />
-                <p>No translation history yet</p>
-                <small>Your recent translations will appear here</small>
-            </div>
-        }
-        else
-        {
-            <RadzenDataList Data="@_historyItems" class="history-list">
-                <Template Context="item">
-                    <RadzenCard class="history-card" @onclick="@(() => OnHistoryItemClick(item))">
-                        <RadzenStack Gap="0.5rem">
-                            <span class="history-time">@item.Timestamp.ToString("h:mm tt")</span>
-                            <p class="history-input">@item.InputPreview</p>
-                            <RadzenIcon Icon="arrow_downward" class="history-arrow" />
-                            <p class="history-output">@item.TranslatedPreview</p>
-                        </RadzenStack>
-                    </RadzenCard>
-                </Template>
-            </RadzenDataList>
-            
-            <RadzenButton Text="Clear All" Icon="delete_sweep" ButtonStyle="ButtonStyle.Danger" 
-                          Variant="Variant.Outlined" Click="@OnClearHistory" class="clear-history-btn" />
-        }
-    </div>
-</div>
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.
@@ -119,21 +61,6 @@
 
 @code {
     private bool _mobileMenuOpen = false;
-    private bool _historyDrawerOpen = false;
-    private List<TranslationHistoryItem>? _historyItems;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadHistoryAsync();
-        HistoryService.OnChange += StateHasChanged;
-        HistoryService.OnChange += async () => await LoadHistoryAsync();
-    }
-
-    private async Task LoadHistoryAsync()
-    {
-        _historyItems = await HistoryService.GetHistoryAsync();
-        StateHasChanged();
-    }
 
     private bool IsActive(string path)
     {
@@ -144,24 +71,5 @@
     private string GetNavBtnClass(string path) => IsActive(path) ? "nav-btn active" : "nav-btn";
 
     private void ToggleMobileMenu() => _mobileMenuOpen = !_mobileMenuOpen;
-    
-    private void ToggleHistoryDrawer() => _historyDrawerOpen = !_historyDrawerOpen;
-
-    private void OnHistoryItemClick(TranslationHistoryItem item)
-    {
-        // Could navigate or populate the translation form
-        _historyDrawerOpen = false;
-    }
-
-    private async Task OnClearHistory()
-    {
-        await HistoryService.ClearHistoryAsync();
-        await LoadHistoryAsync();
-    }
-
-    public void Dispose()
-    {
-        HistoryService.OnChange -= StateHasChanged;
-    }
 }
 

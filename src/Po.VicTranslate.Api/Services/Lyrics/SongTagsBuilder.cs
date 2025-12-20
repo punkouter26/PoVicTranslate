@@ -1,4 +1,4 @@
-namespace Po.VicTranslate.Api.Services;
+namespace Po.VicTranslate.Api.Services.Lyrics;
 
 /// <summary>
 /// Builder for generating tags from song metadata and content.

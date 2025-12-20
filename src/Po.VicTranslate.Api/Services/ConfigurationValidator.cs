@@ -25,7 +25,7 @@ public class ConfigurationValidator : IConfigurationValidator
     {
         _logger.LogInformation("Delegating Azure OpenAI validation...");
         var validator = _validators.FirstOrDefault(v => v.CheckName == "Azure OpenAI Configuration");
-        
+
         if (validator == null)
         {
             _logger.LogWarning("Azure OpenAI validator not found in registered validators");
@@ -44,7 +44,7 @@ public class ConfigurationValidator : IConfigurationValidator
     {
         _logger.LogInformation("Delegating Azure Speech validation...");
         var validator = _validators.FirstOrDefault(v => v.CheckName == "Azure Speech Service Connection");
-        
+
         if (validator == null)
         {
             _logger.LogWarning("Azure Speech validator not found in registered validators");
@@ -63,7 +63,7 @@ public class ConfigurationValidator : IConfigurationValidator
     {
         _logger.LogInformation("Delegating Internet connectivity validation...");
         var validator = _validators.FirstOrDefault(v => v.CheckName == "Internet Connectivity");
-        
+
         if (validator == null)
         {
             _logger.LogWarning("Internet connectivity validator not found in registered validators");

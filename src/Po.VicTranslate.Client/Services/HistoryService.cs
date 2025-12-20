@@ -9,7 +9,7 @@ public class HistoryService
     private const string StorageKey = "translation-history";
     private const int MaxHistoryItems = 5;
     private const int MaxAgeDays = 7;
-    
+
     private readonly IJSRuntime _jsRuntime;
     private List<TranslationHistoryItem> _cache = new();
     private bool _isInitialized;
@@ -84,15 +84,15 @@ public class HistoryService
         try
         {
             var json = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKey);
-            
+
             if (!string.IsNullOrEmpty(json))
             {
                 var items = JsonSerializer.Deserialize<List<TranslationHistoryItem>>(json) ?? new();
-                
+
                 // Remove old items
                 var cutoffDate = DateTime.Now.AddDays(-MaxAgeDays);
                 _cache = items.Where(x => x.Timestamp > cutoffDate).ToList();
-                
+
                 // If we removed any, save the cleaned list
                 if (_cache.Count != items.Count)
                 {

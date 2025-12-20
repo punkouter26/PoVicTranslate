@@ -41,17 +41,17 @@ public class SpeechController : ControllerBase
     }
 
     /// <summary>
-    /// Tests the Azure Speech Service configuration.
+    /// Gets the Azure Speech Service configuration status.
     /// </summary>
     /// <returns>Configuration status including whether key and region are set.</returns>
     /// <response code="200">Returns the configuration status.</response>
-    [HttpGet("test-config")]
+    [HttpGet("configuration")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public IActionResult TestConfiguration()
+    public IActionResult GetConfiguration()
     {
         var hasKey = !string.IsNullOrWhiteSpace(_apiSettings.AzureSpeechSubscriptionKey);
         var hasRegion = !string.IsNullOrWhiteSpace(_apiSettings.AzureSpeechRegion);
-        
+
         return Ok(new
         {
             HasSubscriptionKey = hasKey,

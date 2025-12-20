@@ -8,7 +8,7 @@ using Po.VicTranslate.Api.Services;
 using Po.VicTranslate.Api.Services.Validation;
 using Xunit;
 
-namespace VictorianTranslator.UnitTests.Controllers;
+namespace Po.VicTranslate.UnitTests.Controllers;
 
 public class TranslationControllerTests
 {
@@ -26,7 +26,7 @@ public class TranslationControllerTests
         _mockTelemetryService = new Mock<ICustomTelemetryService>();
         _mockInputValidator = new Mock<IInputValidator>();
         _mockLogger = new Mock<ILogger<TranslationController>>();
-        
+
         _controller = new TranslationController(
             _mockTranslationService.Object,
             _mockAudioSynthesisService.Object,
@@ -45,10 +45,10 @@ public class TranslationControllerTests
         // Setup validator to return valid result with sanitized text
         _mockInputValidator
             .Setup(x => x.ValidateTextContent(request.Text, 5000))
-            .Returns(new ValidationResult 
-            { 
-                IsValid = true, 
-                SanitizedValue = request.Text 
+            .Returns(new ValidationResult
+            {
+                IsValid = true,
+                SanitizedValue = request.Text
             });
 
         _mockTranslationService
@@ -73,7 +73,7 @@ public class TranslationControllerTests
     {
         // Arrange
         var request = new TranslationRequest { Text = text! };
-        
+
         // Setup validator to return failure for empty text
         _mockInputValidator
             .Setup(x => x.ValidateTextContent(text!, 5000))
@@ -93,16 +93,16 @@ public class TranslationControllerTests
     {
         // Arrange
         var request = new TranslationRequest { Text = "Test text" };
-        
+
         // Setup validator to return valid result
         _mockInputValidator
             .Setup(x => x.ValidateTextContent(request.Text, 5000))
-            .Returns(new ValidationResult 
-            { 
-                IsValid = true, 
-                SanitizedValue = request.Text 
+            .Returns(new ValidationResult
+            {
+                IsValid = true,
+                SanitizedValue = request.Text
             });
-            
+
         _mockTranslationService
             .Setup(x => x.TranslateToVictorianEnglishAsync(request.Text))
             .ReturnsAsync("Translated text");
@@ -121,16 +121,16 @@ public class TranslationControllerTests
     {
         // Arrange
         var request = new TranslationRequest { Text = "Test" };
-        
+
         // Setup validator to return valid result
         _mockInputValidator
             .Setup(x => x.ValidateTextContent(request.Text, 5000))
-            .Returns(new ValidationResult 
-            { 
-                IsValid = true, 
-                SanitizedValue = request.Text 
+            .Returns(new ValidationResult
+            {
+                IsValid = true,
+                SanitizedValue = request.Text
             });
-            
+
         _mockTranslationService
             .Setup(x => x.TranslateToVictorianEnglishAsync(request.Text))
             .ThrowsAsync(new InvalidOperationException("Service error"));

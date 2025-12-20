@@ -11,7 +11,7 @@ public interface IDiagnosticValidator
     /// Gets the name of the check being performed
     /// </summary>
     string CheckName { get; }
-    
+
     /// <summary>
     /// Validates the service configuration and connectivity
     /// </summary>

@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Po.VicTranslate.Api.Services;
+using Po.VicTranslate.Api.Services.Lyrics;
 using Xunit;
 
 namespace Po.VicTranslate.UnitTests.Services;

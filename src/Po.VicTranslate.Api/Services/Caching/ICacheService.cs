@@ -40,7 +40,7 @@ public class CacheStatistics
     public long TotalHits { get; set; }
     public long TotalMisses { get; set; }
     public long TotalEvictions { get; set; }
-    public double HitRate => TotalHits + TotalMisses > 0 
-        ? (double)TotalHits / (TotalHits + TotalMisses) * 100 
+    public double HitRate => TotalHits + TotalMisses > 0
+        ? (double)TotalHits / (TotalHits + TotalMisses) * 100
         : 0;
 }

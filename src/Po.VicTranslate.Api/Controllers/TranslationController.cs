@@ -72,7 +72,7 @@ public class TranslationController : ControllerBase
             _logger.LogInformation("Processing translation request: TextLength={Length}", sanitizedText.Length);
 
             var translatedText = await _translationService.TranslateToVictorianEnglishAsync(sanitizedText);
-            
+
             // Automatically synthesize speech for the translated text
             byte[]? audioData = null;
             try
@@ -98,8 +98,8 @@ public class TranslationController : ControllerBase
 
             _telemetryService.TrackUserActivity("Translation", userId: null);
 
-            return Ok(new TranslationResponse 
-            { 
+            return Ok(new TranslationResponse
+            {
                 TranslatedText = translatedText,
                 AudioData = audioData
             });

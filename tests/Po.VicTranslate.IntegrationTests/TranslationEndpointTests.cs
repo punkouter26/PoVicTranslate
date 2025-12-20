@@ -5,7 +5,7 @@ using System.Net.Http.Json;
 using Po.VicTranslate.Api.Models;
 using Xunit;
 
-namespace VictorianTranslator.IntegrationTests;
+namespace Po.VicTranslate.IntegrationTests;
 
 public class TranslationEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 {

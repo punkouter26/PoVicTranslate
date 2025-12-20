@@ -24,7 +24,7 @@ public class ApiResponseTimeMiddlewareIntegrationTests : IClassFixture<WebApplic
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         // The middleware should have tracked this request
         // (telemetry is verified through Application Insights in production)
     }
@@ -40,7 +40,7 @@ public class ApiResponseTimeMiddlewareIntegrationTests : IClassFixture<WebApplic
 
         // Assert
         Assert.True(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.ServiceUnavailable);
-        
+
         // The middleware should have tracked this request with:
         // - Endpoint: "GET /api/health/ready"
         // - StatusCode: 200 or 503
@@ -74,7 +74,7 @@ public class ApiResponseTimeMiddlewareIntegrationTests : IClassFixture<WebApplic
 
         // Assert - MapFallbackToFile returns 200 for non-API routes (Blazor SPA)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        
+
         // The middleware should track this as:
         // - Endpoint: "GET /nonexistent-page"
         // - StatusCode: 200 (served index.html)

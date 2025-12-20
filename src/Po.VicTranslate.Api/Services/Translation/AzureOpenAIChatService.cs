@@ -52,8 +52,8 @@ public class AzureOpenAIChatService
 
         var response = await chatClient.CompleteChatAsync(messages, chatCompletionOptions);
 
-        _logger.LogInformation("Azure OpenAI response received. HasValue: {HasValue}, ContentCount: {Count}, FinishReason: {FinishReason}", 
-            response?.Value != null, 
+        _logger.LogInformation("Azure OpenAI response received. HasValue: {HasValue}, ContentCount: {Count}, FinishReason: {FinishReason}",
+            response?.Value != null,
             response?.Value?.Content?.Count ?? 0,
             response?.Value?.FinishReason);
 
@@ -63,22 +63,22 @@ public class AzureOpenAIChatService
             _logger.LogWarning("Content was blocked by Azure OpenAI content filtering. " +
                 "This typically occurs when input contains profanity, violence, or other restricted content. " +
                 "Consider adjusting content filter settings in Azure portal or sanitizing input.");
-            
+
             return "Alas, the content could not be translated due to safety restrictions. " +
                    "Prithee, consider revising the text to remove profanity or explicit themes.";
         }
 
         if (response?.Value?.Content == null || response.Value.Content.Count == 0)
         {
-            _logger.LogWarning("Received null or empty response from Azure OpenAI. Response is null: {IsNull}, Content is null: {ContentNull}", 
+            _logger.LogWarning("Received null or empty response from Azure OpenAI. Response is null: {IsNull}, Content is null: {ContentNull}",
                 response?.Value == null,
                 response?.Value?.Content == null);
             return "Regrettably, the translation could not be procured at this time.";
         }
 
         var content = response.Value.Content[0].Text;
-        _logger.LogInformation("Extracted content from response. Content length: {Length}, IsNull: {IsNull}", 
-            content?.Length ?? 0, 
+        _logger.LogInformation("Extracted content from response. Content length: {Length}, IsNull: {IsNull}",
+            content?.Length ?? 0,
             content == null);
         return content ?? "The translation yielded naught but silence.";
     }

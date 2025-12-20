@@ -59,7 +59,7 @@ public class AudioSynthesisServiceTests
             AzureSpeechRegion = "eastus2"
         };
         var options = Options.Create(settings);
-        
+
         _mockValidator.Setup(v => v.IsValid(settings)).Returns(false);
         _mockValidator.Setup(v => v.GetValidationError(settings))
             .Returns("Azure Speech SubscriptionKey is missing or empty");

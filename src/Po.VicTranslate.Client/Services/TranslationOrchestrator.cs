@@ -115,7 +115,7 @@ public class TranslationOrchestrator : ITranslationOrchestrator
             viewModel.IsTranslating = true;
             var response = await _translationService.TranslateText(viewModel.InputText);
             viewModel.TranslatedText = response.TranslatedText ?? string.Empty;
-            
+
             // Automatically play audio if available
             if (response.AudioData != null && response.AudioData.Length > 0)
             {

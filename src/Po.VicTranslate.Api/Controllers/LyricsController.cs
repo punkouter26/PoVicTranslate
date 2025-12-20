@@ -1,9 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Po.VicTranslate.Api.Services;
-using Po.VicTranslate.Api.Services.Lyrics;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Po.VicTranslate.Api.Controllers;
 
@@ -15,19 +11,14 @@ namespace Po.VicTranslate.Api.Controllers;
 public class LyricsController : ControllerBase
 {
     private readonly ILyricsService _lyricsService;
-    private readonly ILyricsUtilityService _lyricsUtility;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LyricsController"/> class.
     /// </summary>
     /// <param name="lyricsService">Service for retrieving song lyrics.</param>
-    /// <param name="lyricsUtility">Utility service for lyrics operations.</param>
-    public LyricsController(
-        ILyricsService lyricsService,
-        ILyricsUtilityService lyricsUtility)
+    public LyricsController(ILyricsService lyricsService)
     {
         _lyricsService = lyricsService;
-        _lyricsUtility = lyricsUtility;
     }
 
     /// <summary>
@@ -60,9 +51,7 @@ public class LyricsController : ControllerBase
         {
             return NotFound();
         }
-        
-        // Limit to 200 words
-        var limitedLyrics = _lyricsUtility.LimitWords(lyrics, 200);
-        return Ok(limitedLyrics);
+
+        return Ok(lyrics);
     }
 }

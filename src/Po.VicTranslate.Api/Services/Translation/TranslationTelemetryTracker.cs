@@ -23,10 +23,10 @@ public class TranslationTelemetryTracker
     {
         var telemetry = new EventTelemetry("Translation_Request");
         telemetry.Properties["InputLength"] = inputText.Length.ToString();
-        telemetry.Properties["InputText"] = inputText.Length > 100 
-            ? inputText.Substring(0, 100) + "..." 
+        telemetry.Properties["InputText"] = inputText.Length > 100
+            ? inputText.Substring(0, 100) + "..."
             : inputText;
-        
+
         return telemetry;
     }
 

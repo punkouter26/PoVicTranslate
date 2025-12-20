@@ -2,32 +2,20 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Po.VicTranslate.Api.Controllers;
-using Po.VicTranslate.Api.Models;
 using Po.VicTranslate.Api.Services;
-using Po.VicTranslate.Api.Services.Lyrics;
 using Xunit;
 
-namespace VictorianTranslator.UnitTests.Controllers;
+namespace Po.VicTranslate.UnitTests.Controllers;
 
 public class LyricsControllerTests
 {
     private readonly Mock<ILyricsService> _mockLyricsService;
-    private readonly Mock<ILyricsUtilityService> _mockLyricsUtility;
     private readonly LyricsController _controller;
 
     public LyricsControllerTests()
     {
         _mockLyricsService = new Mock<ILyricsService>();
-        _mockLyricsUtility = new Mock<ILyricsUtilityService>();
-        
-        // Setup default behavior for LimitWords to pass through
-        _mockLyricsUtility
-            .Setup(x => x.LimitWords(It.IsAny<string>(), It.IsAny<int>()))
-            .Returns<string, int>((text, maxWords) => text);
-        
-        _controller = new LyricsController(
-            _mockLyricsService.Object,
-            _mockLyricsUtility.Object);
+        _controller = new LyricsController(_mockLyricsService.Object);
     }
 
     [Fact]
@@ -67,7 +55,6 @@ public class LyricsControllerTests
         result.Result.Should().BeOfType<OkObjectResult>();
         var okResult = result.Result as OkObjectResult;
         okResult!.Value.Should().Be(lyrics);
-        _mockLyricsUtility.Verify(x => x.LimitWords(lyrics, 200), Times.Once);
     }
 
     [Fact]

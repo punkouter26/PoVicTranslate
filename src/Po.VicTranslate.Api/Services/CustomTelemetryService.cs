@@ -228,7 +228,7 @@ public class CustomTelemetryService : ICustomTelemetryService
 
         _telemetryClient.TrackEvent("CacheEviction", properties);
 
-        _logger.LogInformation("Cache eviction: Type={CacheType}, Key={CacheKey}, Reason={Reason}", 
+        _logger.LogInformation("Cache eviction: Type={CacheType}, Key={CacheKey}, Reason={Reason}",
             cacheType, cacheKey, reason);
     }
 
@@ -254,7 +254,7 @@ public class CustomTelemetryService : ICustomTelemetryService
 
         if (statusCode >= 400)
         {
-            _logger.LogWarning("API error response: {Endpoint} returned {StatusCode} in {DurationMs}ms", 
+            _logger.LogWarning("API error response: {Endpoint} returned {StatusCode} in {DurationMs}ms",
                 endpoint, statusCode, durationMs);
         }
     }

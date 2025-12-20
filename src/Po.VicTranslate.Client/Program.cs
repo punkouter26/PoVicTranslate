@@ -26,9 +26,8 @@ builder.Services.AddScoped<ClientTranslationService>();
 builder.Services.AddScoped<ClientLyricsService>();
 builder.Services.AddScoped<ITranslationOrchestrator, TranslationOrchestrator>();
 
-// Phase 1 UI/UX Enhancement Services
+// UI Services
 builder.Services.AddScoped<HistoryService>();
-builder.Services.AddScoped<FuzzyMatchService>();
 
 // Radzen Services
 builder.Services.AddScoped<DialogService>();

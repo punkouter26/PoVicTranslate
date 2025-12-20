@@ -525,20 +525,20 @@ public class HistoryServiceTests
         // Act & Assert - Add items
         await _service.AddItemAsync("yo", "Good day");
         await _service.AddItemAsync("what's up", "How do you do");
-        
+
         var history1 = await _service.GetHistoryAsync();
         history1.Should().HaveCount(2);
 
         // Remove one item
         var itemToRemove = history1[1];
         await _service.RemoveItemAsync(itemToRemove.Id);
-        
+
         var history2 = await _service.GetHistoryAsync();
         history2.Should().HaveCount(1);
 
         // Clear all
         await _service.ClearHistoryAsync();
-        
+
         var history3 = await _service.GetHistoryAsync();
         history3.Should().BeEmpty();
     }
@@ -569,7 +569,7 @@ public class HistoryServiceTests
 
         // Act
         await service1.AddItemAsync("from service 1", "Translation 1");
-        
+
         // Service 2 should see the item added by service 1
         var history = await service2.GetHistoryAsync();
 
