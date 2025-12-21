@@ -1,155 +1,126 @@
-using Microsoft.CognitiveServices.Speech;
 using Microsoft.Extensions.Options;
 using Po.VicTranslate.Api.Configuration;
 using Microsoft.Extensions.Logging;
 using Po.VicTranslate.Api.Services.Validation;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace Po.VicTranslate.Api.Services;
 
 /// <summary>
 /// Azure Speech Services implementation for audio synthesis.
-/// Uses lazy initialization to avoid native DLL loading issues in environments
-/// where the Speech SDK native libraries may not be available.
+/// Uses the REST API instead of the SDK to avoid native library dependencies.
+/// This works on all platforms including Azure App Service Linux.
 /// </summary>
 public class AudioSynthesisService : IAudioSynthesisService
 {
     private readonly ApiSettings _settings;
     private readonly ISpeechConfigValidator _configValidator;
     private readonly ILogger<AudioSynthesisService> _logger;
-    private SpeechConfig? _speechConfig;
-    private bool _initializationAttempted;
-    private Exception? _initializationException;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private string? _accessToken;
+    private DateTime _tokenExpiry = DateTime.MinValue;
+
+    private const string VoiceName = "en-GB-RyanNeural";
 
     public AudioSynthesisService(
         IOptions<ApiSettings> apiSettings,
         ISpeechConfigValidator configValidator,
+        IHttpClientFactory httpClientFactory,
         ILogger<AudioSynthesisService> logger)
     {
         ArgumentNullException.ThrowIfNull(apiSettings);
         ArgumentNullException.ThrowIfNull(configValidator);
+        ArgumentNullException.ThrowIfNull(httpClientFactory);
         _settings = apiSettings.Value;
         _configValidator = configValidator;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
 
-        // Defer initialization to first use to avoid native DLL loading at startup
-        _logger.LogInformation("AudioSynthesisService created with lazy initialization");
+        _logger.LogInformation("AudioSynthesisService created using REST API (no native SDK required)");
     }
 
-    private SpeechConfig GetOrCreateSpeechConfig()
+    private async Task<string> GetAccessTokenAsync()
     {
-        if (_speechConfig != null)
-            return _speechConfig;
-
-        if (_initializationAttempted && _initializationException != null)
-            throw _initializationException;
-
-        _initializationAttempted = true;
-
-        // Delegate validation to the validator (SRP)
-        if (!_configValidator.IsValid(_settings))
+        // Return cached token if still valid (with 1 minute buffer)
+        if (_accessToken != null && DateTime.UtcNow < _tokenExpiry.AddMinutes(-1))
         {
-            var error = _configValidator.GetValidationError(_settings);
-            _logger.LogError("Azure Speech settings validation failed: {Error}", error);
-            _initializationException = new InvalidOperationException($"Azure Speech settings are not configured: {error}");
-            throw _initializationException;
+            return _accessToken;
         }
 
-        try
-        {
-            _logger.LogInformation("Initializing Azure Speech Service with Region: {Region}", _settings.AzureSpeechRegion);
-            _speechConfig = SpeechConfig.FromSubscription(_settings.AzureSpeechSubscriptionKey, _settings.AzureSpeechRegion);
+        var tokenEndpoint = $"https://{_settings.AzureSpeechRegion}.api.cognitive.microsoft.com/sts/v1.0/issueToken";
 
-            // Try using a more standard British English voice that's widely available
-            _speechConfig.SpeechSynthesisVoiceName = "en-GB-RyanNeural";
-            _logger.LogInformation("Using voice: {Voice}", _speechConfig.SpeechSynthesisVoiceName);
+        using var client = _httpClientFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _settings.AzureSpeechSubscriptionKey);
 
-            // Use standard MP3 format for better compatibility
-            _speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3);
+        _logger.LogInformation("Fetching new access token from {Endpoint}", tokenEndpoint);
 
-            return _speechConfig;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to initialize Azure Speech SDK. This may be due to missing native libraries.");
-            _initializationException = new InvalidOperationException(
-                "Azure Speech SDK initialization failed. The native libraries may not be available in this environment.", ex);
-            throw _initializationException;
-        }
+        var response = await client.PostAsync(tokenEndpoint, new StringContent(string.Empty));
+        response.EnsureSuccessStatusCode();
+
+        _accessToken = await response.Content.ReadAsStringAsync();
+        _tokenExpiry = DateTime.UtcNow.AddMinutes(9); // Token valid for 10 minutes, refresh at 9
+
+        _logger.LogInformation("Access token obtained successfully");
+        return _accessToken;
     }
 
     public async Task<byte[]> SynthesizeSpeechAsync(string text)
     {
-        var speechConfig = GetOrCreateSpeechConfig();
-
-        _logger.LogInformation("Starting speech synthesis for text: '{Text}'", text);
-        _logger.LogInformation("Using voice: {Voice}, Region: {Region}",
-            speechConfig.SpeechSynthesisVoiceName,
-            speechConfig.Region);
-
-        using (var synthesizer = new SpeechSynthesizer(speechConfig, null))
+        // Validate configuration
+        if (!_configValidator.IsValid(_settings))
         {
-            // Use SSML for better reliability and control
-            var ssml = $@"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-GB'>
-                <voice name='{speechConfig.SpeechSynthesisVoiceName}'>
-                    {System.Security.SecurityElement.Escape(text)}
-                </voice>
-            </speak>";
-
-            _logger.LogInformation("Using SSML for synthesis");
-            var result = await synthesizer.SpeakSsmlAsync(ssml);
-
-            _logger.LogInformation("Speech synthesis result reason: {Reason}", result.Reason);
-
-            if (result.Reason == ResultReason.SynthesizingAudioCompleted)
-            {
-                _logger.LogInformation("Speech synthesis completed successfully. Audio data length: {Length} bytes", result.AudioData?.Length ?? 0);
-
-                // Directly return the audio data from the result
-                if (result.AudioData != null && result.AudioData.Length > 0)
-                {
-                    return result.AudioData;
-                }
-
-                _logger.LogWarning("Audio data is null or empty, falling back to stream reading");
-                using (var audioStream = AudioDataStream.FromResult(result))
-                {
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        byte[] buffer = new byte[8000]; // Buffer size
-                        uint bytesRead;
-                        while ((bytesRead = audioStream.ReadData(buffer)) > 0)
-                        {
-                            memoryStream.Write(buffer, 0, (int)bytesRead);
-                        }
-                        return memoryStream.ToArray();
-                    }
-                }
-            }
-            else if (result.Reason == ResultReason.Canceled)
-            {
-                var cancellation = SpeechSynthesisCancellationDetails.FromResult(result);
-                _logger.LogError("Speech synthesis cancelled: Reason={Reason}, ErrorCode={ErrorCode}, ErrorDetails={ErrorDetails}",
-                    cancellation.Reason, cancellation.ErrorCode, cancellation.ErrorDetails);
-
-                // Provide more specific error messages
-                var errorMessage = cancellation.ErrorCode switch
-                {
-                    CancellationErrorCode.AuthenticationFailure => "Authentication failed. Please verify your Azure Speech Service subscription key.",
-                    CancellationErrorCode.BadRequest => "Bad request. The voice or configuration may not be supported in this region.",
-                    CancellationErrorCode.TooManyRequests => "Too many requests. Please try again later.",
-                    CancellationErrorCode.Forbidden => "Access forbidden. Please check your subscription permissions.",
-                    CancellationErrorCode.ConnectionFailure => "Connection failed. Please check your network connection.",
-                    CancellationErrorCode.ServiceTimeout => "Service timeout. Please try again.",
-                    _ => $"Speech synthesis cancelled: {cancellation.Reason}. ErrorCode: {cancellation.ErrorCode}. Details: {cancellation.ErrorDetails}"
-                };
-
-                throw new Exception(errorMessage);
-            }
-            else
-            {
-                _logger.LogError("Speech synthesis failed: Reason={Reason}", result.Reason);
-                throw new Exception($"Speech synthesis failed: {result.Reason}");
-            }
+            var error = _configValidator.GetValidationError(_settings);
+            _logger.LogError("Azure Speech settings validation failed: {Error}", error);
+            throw new InvalidOperationException($"Azure Speech settings are not configured: {error}");
         }
+
+        _logger.LogInformation("Starting speech synthesis for text length: {Length}", text.Length);
+
+        var accessToken = await GetAccessTokenAsync();
+
+        var ttsEndpoint = $"https://{_settings.AzureSpeechRegion}.tts.speech.microsoft.com/cognitiveservices/v1";
+
+        // Build SSML
+        var ssml = $@"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-GB'>
+            <voice name='{VoiceName}'>
+                {System.Security.SecurityElement.Escape(text)}
+            </voice>
+        </speak>";
+
+        using var client = _httpClientFactory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, ttsEndpoint);
+
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("X-Microsoft-OutputFormat", "audio-16khz-32kbitrate-mono-mp3");
+        request.Headers.Add("User-Agent", "PoVicTranslate");
+
+        request.Content = new StringContent(ssml, Encoding.UTF8, "application/ssml+xml");
+
+        _logger.LogInformation("Sending TTS request to {Endpoint} with voice {Voice}", ttsEndpoint, VoiceName);
+
+        var response = await client.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Speech synthesis failed: {StatusCode} - {Error}", response.StatusCode, errorContent);
+
+            var errorMessage = response.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Unauthorized => "Authentication failed. Please verify your Azure Speech Service subscription key.",
+                System.Net.HttpStatusCode.BadRequest => "Bad request. The voice or configuration may not be supported.",
+                System.Net.HttpStatusCode.TooManyRequests => "Too many requests. Please try again later.",
+                System.Net.HttpStatusCode.Forbidden => "Access forbidden. Please check your subscription permissions.",
+                _ => $"Speech synthesis failed: {response.StatusCode}. Details: {errorContent}"
+            };
+
+            throw new Exception(errorMessage);
+        }
+
+        var audioData = await response.Content.ReadAsByteArrayAsync();
+        _logger.LogInformation("Speech synthesis completed successfully. Audio size: {Size} bytes", audioData.Length);
+
+        return audioData;
     }
 }

@@ -1,28 +1,32 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Microsoft.CognitiveServices.Speech;
 using Po.VicTranslate.Api.Configuration;
 
 namespace Po.VicTranslate.Api.HealthChecks;
 
 /// <summary>
-/// Health check for Azure Speech service connectivity
+/// Health check for Azure Speech service connectivity using REST API
 /// </summary>
 public class AzureSpeechHealthCheck : IHealthCheck
 {
     private readonly ApiSettings _apiSettings;
     private readonly ILogger<AzureSpeechHealthCheck> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public AzureSpeechHealthCheck(IOptions<ApiSettings> apiSettings, ILogger<AzureSpeechHealthCheck> logger)
+    public AzureSpeechHealthCheck(
+        IOptions<ApiSettings> apiSettings, 
+        ILogger<AzureSpeechHealthCheck> logger,
+        IHttpClientFactory httpClientFactory)
     {
         ArgumentNullException.ThrowIfNull(apiSettings);
         _apiSettings = apiSettings.Value;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Checking Azure Speech service health");
+        _logger.LogInformation("Checking Azure Speech service health via REST API");
 
         if (string.IsNullOrWhiteSpace(_apiSettings.AzureSpeechSubscriptionKey) ||
             _apiSettings.AzureSpeechSubscriptionKey == "YOUR_AZURE_SPEECH_KEY_PLACEHOLDER" ||
@@ -33,53 +37,43 @@ public class AzureSpeechHealthCheck : IHealthCheck
             return HealthCheckResult.Unhealthy(message);
         }
 
-        SpeechSynthesizer? synthesizer = null;
         try
         {
-            var speechConfig = SpeechConfig.FromSubscription(_apiSettings.AzureSpeechSubscriptionKey, _apiSettings.AzureSpeechRegion);
-            synthesizer = new SpeechSynthesizer(speechConfig, null);
+            // Use the token endpoint to verify credentials are valid
+            var tokenEndpoint = $"https://{_apiSettings.AzureSpeechRegion}.api.cognitive.microsoft.com/sts/v1.0/issueToken";
+            
+            using var httpClient = _httpClientFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
+            request.Headers.Add("Ocp-Apim-Subscription-Key", _apiSettings.AzureSpeechSubscriptionKey);
+            request.Content = new StringContent(string.Empty);
 
-            _logger.LogInformation("Attempting to retrieve voices from Azure Speech region {Region}", _apiSettings.AzureSpeechRegion);
-            using var voiceResult = await synthesizer.GetVoicesAsync();
+            _logger.LogInformation("Attempting to get token from Azure Speech region {Region}", _apiSettings.AzureSpeechRegion);
+            
+            var response = await httpClient.SendAsync(request, cancellationToken);
 
-            if (voiceResult.Reason == ResultReason.VoicesListRetrieved && voiceResult.Voices.Any())
+            if (response.IsSuccessStatusCode)
             {
-                var message = $"Successfully connected and retrieved {voiceResult.Voices.Count} voices from region '{_apiSettings.AzureSpeechRegion}'";
+                var message = $"Successfully authenticated with Azure Speech Service in region '{_apiSettings.AzureSpeechRegion}'";
                 _logger.LogInformation("Azure Speech health check successful");
                 return HealthCheckResult.Healthy(message);
             }
-            else if (voiceResult.Reason == ResultReason.Canceled)
+            else
             {
-                var message = $"Failed to retrieve voices. Reason: Canceled. Details: {voiceResult.ErrorDetails}";
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                var message = $"Failed to authenticate with Azure Speech Service. Status: {response.StatusCode}. Details: {errorContent}";
                 _logger.LogError("Azure Speech health check failed: {Message}", message);
                 return HealthCheckResult.Unhealthy(message);
             }
-            else
-            {
-                var message = $"Voice list retrieval returned unexpected status: {voiceResult.Reason}";
-                _logger.LogWarning("Azure Speech health check failed with unexpected status: {Reason}", voiceResult.Reason);
-                return HealthCheckResult.Degraded(message);
-            }
         }
-        catch (TypeInitializationException ex)
+        catch (HttpRequestException ex)
         {
-            // This typically means native Speech SDK libraries are not available
-            _logger.LogWarning(ex, "Azure Speech SDK native libraries not available in this environment");
-            return HealthCheckResult.Degraded("Azure Speech SDK native libraries not available. Speech synthesis is disabled.", ex);
-        }
-        catch (DllNotFoundException ex)
-        {
-            _logger.LogWarning(ex, "Azure Speech SDK DLL not found");
-            return HealthCheckResult.Degraded("Azure Speech SDK native libraries not found. Speech synthesis is disabled.", ex);
+            _logger.LogError(ex, "Azure Speech health check failed with HTTP exception");
+            return HealthCheckResult.Unhealthy($"Error connecting to Azure Speech Service: {ex.Message}", ex);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Azure Speech health check failed with exception");
-            return HealthCheckResult.Unhealthy($"Error connecting to Azure Speech Service: {ex.Message}", ex);
-        }
-        finally
-        {
-            synthesizer?.Dispose();
+            return HealthCheckResult.Unhealthy($"Error checking Azure Speech Service health: {ex.Message}", ex);
         }
     }
 }

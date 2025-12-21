@@ -105,6 +105,9 @@ try
     builder.Services.AddMemoryCache();
     builder.Services.AddSingleton<Po.VicTranslate.Api.Services.Caching.ICacheService, Po.VicTranslate.Api.Services.Caching.CacheService>();
 
+    // Add HttpClient factory for REST API calls (Speech Service)
+    builder.Services.AddHttpClient();
+
     // Configure API Settings
     builder.Services.Configure<ApiSettings>(
         builder.Configuration.GetSection("ApiSettings"));

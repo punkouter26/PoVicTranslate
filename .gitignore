@@ -98,3 +98,5 @@ app-output.log
 *.png
 run-app.ps1
 
+# Azure webapp logs downloaded locally
+webapp-logs/
