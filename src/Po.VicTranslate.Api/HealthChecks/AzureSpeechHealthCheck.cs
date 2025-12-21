@@ -61,6 +61,17 @@ public class AzureSpeechHealthCheck : IHealthCheck
                 return HealthCheckResult.Degraded(message);
             }
         }
+        catch (TypeInitializationException ex)
+        {
+            // This typically means native Speech SDK libraries are not available
+            _logger.LogWarning(ex, "Azure Speech SDK native libraries not available in this environment");
+            return HealthCheckResult.Degraded("Azure Speech SDK native libraries not available. Speech synthesis is disabled.", ex);
+        }
+        catch (DllNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Azure Speech SDK DLL not found");
+            return HealthCheckResult.Degraded("Azure Speech SDK native libraries not found. Speech synthesis is disabled.", ex);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Azure Speech health check failed with exception");

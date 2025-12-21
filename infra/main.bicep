@@ -4,6 +4,23 @@ targetScope = 'subscription'
 param environmentName string = 'PoVicTranslate'
 param location string = 'eastus2'
 
+@description('Azure OpenAI API Key')
+@secure()
+param azureOpenAIApiKey string
+
+@description('Azure OpenAI Endpoint')
+param azureOpenAIEndpoint string
+
+@description('Azure OpenAI Deployment Name')
+param azureOpenAIDeploymentName string
+
+@description('Azure Speech Subscription Key')
+@secure()
+param azureSpeechSubscriptionKey string
+
+@description('Azure Speech Region')
+param azureSpeechRegion string
+
 var resourceGroupName = 'PoVicTranslate'
 var tags = {
   'azd-env-name': environmentName
@@ -23,6 +40,11 @@ module resources './resources.bicep' = {
     location: location
     environmentName: environmentName
     tags: tags
+    azureOpenAIApiKey: azureOpenAIApiKey
+    azureOpenAIEndpoint: azureOpenAIEndpoint
+    azureOpenAIDeploymentName: azureOpenAIDeploymentName
+    azureSpeechSubscriptionKey: azureSpeechSubscriptionKey
+    azureSpeechRegion: azureSpeechRegion
   }
 }
 

@@ -7,12 +7,18 @@ using Po.VicTranslate.Api.Services.Validation;
 namespace Po.VicTranslate.Api.Services;
 
 /// <summary>
-/// Azure Speech Services implementation for audio synthesis
+/// Azure Speech Services implementation for audio synthesis.
+/// Uses lazy initialization to avoid native DLL loading issues in environments
+/// where the Speech SDK native libraries may not be available.
 /// </summary>
 public class AudioSynthesisService : IAudioSynthesisService
 {
-    private readonly SpeechConfig _speechConfig;
+    private readonly ApiSettings _settings;
+    private readonly ISpeechConfigValidator _configValidator;
     private readonly ILogger<AudioSynthesisService> _logger;
+    private SpeechConfig? _speechConfig;
+    private bool _initializationAttempted;
+    private Exception? _initializationException;
 
     public AudioSynthesisService(
         IOptions<ApiSettings> apiSettings,
@@ -21,40 +27,70 @@ public class AudioSynthesisService : IAudioSynthesisService
     {
         ArgumentNullException.ThrowIfNull(apiSettings);
         ArgumentNullException.ThrowIfNull(configValidator);
+        _settings = apiSettings.Value;
+        _configValidator = configValidator;
         _logger = logger;
-        var settings = apiSettings.Value;
+
+        // Defer initialization to first use to avoid native DLL loading at startup
+        _logger.LogInformation("AudioSynthesisService created with lazy initialization");
+    }
+
+    private SpeechConfig GetOrCreateSpeechConfig()
+    {
+        if (_speechConfig != null)
+            return _speechConfig;
+
+        if (_initializationAttempted && _initializationException != null)
+            throw _initializationException;
+
+        _initializationAttempted = true;
 
         // Delegate validation to the validator (SRP)
-        if (!configValidator.IsValid(settings))
+        if (!_configValidator.IsValid(_settings))
         {
-            var error = configValidator.GetValidationError(settings);
+            var error = _configValidator.GetValidationError(_settings);
             _logger.LogError("Azure Speech settings validation failed: {Error}", error);
-            throw new InvalidOperationException($"Azure Speech settings are not configured: {error}");
+            _initializationException = new InvalidOperationException($"Azure Speech settings are not configured: {error}");
+            throw _initializationException;
         }
 
-        _logger.LogInformation("Initializing Azure Speech Service with Region: {Region}", settings.AzureSpeechRegion);
-        _speechConfig = SpeechConfig.FromSubscription(settings.AzureSpeechSubscriptionKey, settings.AzureSpeechRegion);
+        try
+        {
+            _logger.LogInformation("Initializing Azure Speech Service with Region: {Region}", _settings.AzureSpeechRegion);
+            _speechConfig = SpeechConfig.FromSubscription(_settings.AzureSpeechSubscriptionKey, _settings.AzureSpeechRegion);
 
-        // Try using a more standard British English voice that's widely available
-        _speechConfig.SpeechSynthesisVoiceName = "en-GB-RyanNeural";
-        _logger.LogInformation("Using voice: {Voice}", _speechConfig.SpeechSynthesisVoiceName);
+            // Try using a more standard British English voice that's widely available
+            _speechConfig.SpeechSynthesisVoiceName = "en-GB-RyanNeural";
+            _logger.LogInformation("Using voice: {Voice}", _speechConfig.SpeechSynthesisVoiceName);
 
-        // Use standard MP3 format for better compatibility
-        _speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3);
+            // Use standard MP3 format for better compatibility
+            _speechConfig.SetSpeechSynthesisOutputFormat(SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3);
+
+            return _speechConfig;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize Azure Speech SDK. This may be due to missing native libraries.");
+            _initializationException = new InvalidOperationException(
+                "Azure Speech SDK initialization failed. The native libraries may not be available in this environment.", ex);
+            throw _initializationException;
+        }
     }
 
     public async Task<byte[]> SynthesizeSpeechAsync(string text)
     {
+        var speechConfig = GetOrCreateSpeechConfig();
+
         _logger.LogInformation("Starting speech synthesis for text: '{Text}'", text);
         _logger.LogInformation("Using voice: {Voice}, Region: {Region}",
-            _speechConfig.SpeechSynthesisVoiceName,
-            _speechConfig.Region);
+            speechConfig.SpeechSynthesisVoiceName,
+            speechConfig.Region);
 
-        using (var synthesizer = new SpeechSynthesizer(_speechConfig, null))
+        using (var synthesizer = new SpeechSynthesizer(speechConfig, null))
         {
             // Use SSML for better reliability and control
             var ssml = $@"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-GB'>
-                <voice name='{_speechConfig.SpeechSynthesisVoiceName}'>
+                <voice name='{speechConfig.SpeechSynthesisVoiceName}'>
                     {System.Security.SecurityElement.Escape(text)}
                 </voice>
             </speak>";

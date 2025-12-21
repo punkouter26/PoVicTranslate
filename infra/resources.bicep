@@ -10,6 +10,23 @@ param environmentName string
 @description('Resource tags')
 param tags object
 
+@description('Azure OpenAI API Key')
+@secure()
+param azureOpenAIApiKey string
+
+@description('Azure OpenAI Endpoint')
+param azureOpenAIEndpoint string
+
+@description('Azure OpenAI Deployment Name')
+param azureOpenAIDeploymentName string
+
+@description('Azure Speech Subscription Key')
+@secure()
+param azureSpeechSubscriptionKey string
+
+@description('Azure Speech Region')
+param azureSpeechRegion string
+
 // Hard-coded App Service Plan reference (F1 in PoShared resource group)
 var existingPlanName = 'PoShared3'
 var existingPlanResourceGroup = 'PoShared'
@@ -104,6 +121,26 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'AZURE_STORAGE_CONNECTION_STRING'
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+        }
+        {
+          name: 'ApiSettings__AzureOpenAIApiKey'
+          value: azureOpenAIApiKey
+        }
+        {
+          name: 'ApiSettings__AzureOpenAIEndpoint'
+          value: azureOpenAIEndpoint
+        }
+        {
+          name: 'ApiSettings__AzureOpenAIDeploymentName'
+          value: azureOpenAIDeploymentName
+        }
+        {
+          name: 'ApiSettings__AzureSpeechSubscriptionKey'
+          value: azureSpeechSubscriptionKey
+        }
+        {
+          name: 'ApiSettings__AzureSpeechRegion'
+          value: azureSpeechRegion
         }
       ]
     }

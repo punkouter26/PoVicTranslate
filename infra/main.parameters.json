@@ -1,5 +1,21 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
-  "parameters": {}
+  "parameters": {
+    "azureOpenAIApiKey": {
+      "value": "${AZURE_OPENAI_API_KEY}"
+    },
+    "azureOpenAIEndpoint": {
+      "value": "${AZURE_OPENAI_ENDPOINT}"
+    },
+    "azureOpenAIDeploymentName": {
+      "value": "${AZURE_OPENAI_DEPLOYMENT_NAME}"
+    },
+    "azureSpeechSubscriptionKey": {
+      "value": "${AZURE_SPEECH_SUBSCRIPTION_KEY}"
+    },
+    "azureSpeechRegion": {
+      "value": "${AZURE_SPEECH_REGION}"
+    }
+  }
 }
