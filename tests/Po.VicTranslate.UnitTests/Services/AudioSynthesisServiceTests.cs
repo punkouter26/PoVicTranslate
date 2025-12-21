@@ -13,12 +13,14 @@ public class AudioSynthesisServiceTests
 {
     private readonly Mock<ILogger<AudioSynthesisService>> _mockLogger;
     private readonly Mock<ISpeechConfigValidator> _mockValidator;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly ApiSettings _validSettings;
 
     public AudioSynthesisServiceTests()
     {
         _mockLogger = new Mock<ILogger<AudioSynthesisService>>();
         _mockValidator = new Mock<ISpeechConfigValidator>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _validSettings = new ApiSettings
         {
             AzureSpeechSubscriptionKey = "test-key-12345678901234567890123456789012",
@@ -30,7 +32,7 @@ public class AudioSynthesisServiceTests
     public void Constructor_WithNullSettings_ThrowsArgumentNullException()
     {
         // Arrange & Act
-        var act = () => new AudioSynthesisService(null!, _mockValidator.Object, _mockLogger.Object);
+        var act = () => new AudioSynthesisService(null!, _mockValidator.Object, _mockHttpClientFactory.Object, _mockLogger.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
@@ -43,14 +45,27 @@ public class AudioSynthesisServiceTests
         var options = Options.Create(_validSettings);
 
         // Act
-        var act = () => new AudioSynthesisService(options, null!, _mockLogger.Object);
+        var act = () => new AudioSynthesisService(options, null!, _mockHttpClientFactory.Object, _mockLogger.Object);
 
         // Assert
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
-    public void Constructor_WithInvalidSettings_ThrowsInvalidOperationException()
+    public void Constructor_WithNullHttpClientFactory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var options = Options.Create(_validSettings);
+
+        // Act
+        var act = () => new AudioSynthesisService(options, _mockValidator.Object, null!, _mockLogger.Object);
+
+        // Assert
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public async Task SynthesizeSpeechAsync_WithInvalidSettings_ThrowsInvalidOperationException()
     {
         // Arrange
         var settings = new ApiSettings
@@ -64,12 +79,14 @@ public class AudioSynthesisServiceTests
         _mockValidator.Setup(v => v.GetValidationError(settings))
             .Returns("Azure Speech SubscriptionKey is missing or empty");
 
+        var service = new AudioSynthesisService(options, _mockValidator.Object, _mockHttpClientFactory.Object, _mockLogger.Object);
+
         // Act
-        var act = () => new AudioSynthesisService(options, _mockValidator.Object, _mockLogger.Object);
+        var act = async () => await service.SynthesizeSpeechAsync("test text");
 
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("Azure Speech settings are not configured: Azure Speech SubscriptionKey is missing or empty");
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Azure Speech SubscriptionKey is missing or empty*");
     }
 
     [Fact]
@@ -80,7 +97,7 @@ public class AudioSynthesisServiceTests
         _mockValidator.Setup(v => v.IsValid(_validSettings)).Returns(true);
 
         // Act
-        var service = new AudioSynthesisService(options, _mockValidator.Object, _mockLogger.Object);
+        var service = new AudioSynthesisService(options, _mockValidator.Object, _mockHttpClientFactory.Object, _mockLogger.Object);
 
         // Assert
         service.Should().NotBeNull();
@@ -93,10 +110,10 @@ public class AudioSynthesisServiceTests
         // Arrange
         var options = Options.Create(_validSettings);
         _mockValidator.Setup(v => v.IsValid(_validSettings)).Returns(true);
-        var service = new AudioSynthesisService(options, _mockValidator.Object, _mockLogger.Object);
+        var service = new AudioSynthesisService(options, _mockValidator.Object, _mockHttpClientFactory.Object, _mockLogger.Object);
 
         // Act & Assert
-        // Note: Actual Azure Speech SDK call will fail in unit tests without real credentials
+        // Note: Actual Azure Speech REST API call will fail in unit tests without real credentials
         // This test validates the service is constructed correctly
         await Assert.ThrowsAnyAsync<Exception>(() => service.SynthesizeSpeechAsync(null!));
     }
@@ -107,10 +124,10 @@ public class AudioSynthesisServiceTests
         // Arrange
         var options = Options.Create(_validSettings);
         _mockValidator.Setup(v => v.IsValid(_validSettings)).Returns(true);
-        var service = new AudioSynthesisService(options, _mockValidator.Object, _mockLogger.Object);
+        var service = new AudioSynthesisService(options, _mockValidator.Object, _mockHttpClientFactory.Object, _mockLogger.Object);
 
         // Act & Assert
-        // Note: Actual Azure Speech SDK call will fail in unit tests without real credentials
+        // Note: Actual Azure Speech REST API call will fail in unit tests without real credentials
         await Assert.ThrowsAnyAsync<Exception>(() => service.SynthesizeSpeechAsync(""));
     }
 }
