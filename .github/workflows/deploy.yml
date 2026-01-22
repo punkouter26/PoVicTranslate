@@ -54,14 +54,13 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     
-    - name: Login to Azure Container Registry
-      run: az acr login --name ${{ env.ACR_NAME }}
-    
-    - name: Build and push container image
+    - name: Build and push container image to ACR
       run: |
         TAG="${{ github.sha }}"
+        # Build using ACR Tasks (doesn't require local Docker login)
         az acr build \
           --registry ${{ env.ACR_NAME }} \
+          --resource-group ${{ env.SHARED_RESOURCE_GROUP }} \
           --image ${{ env.IMAGE_NAME }}:$TAG \
           --image ${{ env.IMAGE_NAME }}:latest \
           --file ./src/PoVicTranslate.Web/Dockerfile \
