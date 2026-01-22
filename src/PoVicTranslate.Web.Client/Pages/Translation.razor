@@ -3,6 +3,7 @@
 @namespace PoVicTranslate.Web.Client.Pages
 @rendermode InteractiveAuto
 @inject ITranslationOrchestrator TranslationOrchestrator
+@inject IJSRuntime JS
 
 <PageTitle>PoVicTranslate</PageTitle>
 
@@ -96,10 +97,29 @@
         try
         {
             await TranslationOrchestrator.TranslateTextAsync(_viewModel);
+            
+            // Play audio if available
+            if (_viewModel.AudioBytes != null && _viewModel.AudioBytes.Length > 0)
+            {
+                await PlayAudioAsync(_viewModel.AudioBytes);
+            }
         }
         catch (Exception ex)
         {
             _viewModel.ErrorMessage = $"Translation failed: {ex.Message}";
+        }
+    }
+
+    private async Task PlayAudioAsync(byte[] audioBytes)
+    {
+        try
+        {
+            var base64Audio = Convert.ToBase64String(audioBytes);
+            await JS.InvokeVoidAsync("playAudio", base64Audio);
+        }
+        catch (Exception ex)
+        {
+            _viewModel.ErrorMessage = $"Audio playback failed: {ex.Message}";
         }
     }
 }

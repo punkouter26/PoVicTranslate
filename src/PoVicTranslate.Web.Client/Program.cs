@@ -10,6 +10,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // Register services
 builder.Services.AddScoped<ClientTranslationService>();
 builder.Services.AddScoped<ClientLyricsService>();
+builder.Services.AddScoped<ClientSpeechService>();
 builder.Services.AddScoped<ITranslationOrchestrator, TranslationOrchestrator>();
 builder.Services.AddScoped<HistoryService>();
 

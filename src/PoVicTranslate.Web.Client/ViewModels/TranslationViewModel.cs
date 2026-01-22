@@ -11,6 +11,7 @@ public sealed class TranslationViewModel
     public bool IsLoading { get; set; }
     public bool IsTranslating { get; set; }
     public List<string> AvailableSongs { get; set; } = [];
+    public byte[]? AudioBytes { get; set; }
 
     public bool CanTranslate => !IsTranslating && !string.IsNullOrWhiteSpace(InputText);
 }

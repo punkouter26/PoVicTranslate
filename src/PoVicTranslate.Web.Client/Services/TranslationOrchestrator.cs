@@ -9,6 +9,7 @@ namespace PoVicTranslate.Web.Client.Services;
 public sealed class TranslationOrchestrator(
     ClientLyricsService lyricsService,
     ClientTranslationService translationService,
+    ClientSpeechService speechService,
     HistoryService historyService) : ITranslationOrchestrator
 {
     public async Task InitializeAsync(TranslationViewModel viewModel)
@@ -81,6 +82,16 @@ public sealed class TranslationOrchestrator(
 
             // Add to history
             historyService.AddEntry(viewModel.InputText, viewModel.TranslatedText);
+
+            // Synthesize and play speech
+            if (!string.IsNullOrEmpty(viewModel.TranslatedText))
+            {
+                var audioBytes = await speechService.SynthesizeSpeechAsync(viewModel.TranslatedText);
+                if (audioBytes != null && audioBytes.Length > 0)
+                {
+                    viewModel.AudioBytes = audioBytes;
+                }
+            }
         }
         catch (HttpRequestException ex)
         {
