@@ -18,7 +18,8 @@ public static class TranslationEndpoints
     {
         var group = app.MapGroup("/api/translation")
             .WithTags("Translation")
-            .WithOpenApi();
+            .WithOpenApi()
+            .DisableAntiforgery();
 
         group.MapPost("/", TranslateAsync)
             .WithName("Translate")

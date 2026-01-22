@@ -15,7 +15,8 @@ public static class LyricsEndpoints
     {
         var group = app.MapGroup("/api/lyrics")
             .WithTags("Lyrics")
-            .WithOpenApi();
+            .WithOpenApi()
+            .DisableAntiforgery();
 
         group.MapGet("/titles", GetAvailableSongsAsync)
             .WithName("GetAvailableSongs")

@@ -18,7 +18,8 @@ public static class SpeechEndpoints
     {
         var group = app.MapGroup("/api/speech")
             .WithTags("Speech")
-            .WithOpenApi();
+            .WithOpenApi()
+            .DisableAntiforgery();
 
         group.MapGet("/configuration", GetConfiguration)
             .WithName("GetSpeechConfiguration")
