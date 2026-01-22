@@ -1,7 +1,7 @@
 # PoVicTranslate.Web Dockerfile
 # Pre-built binaries from dotnet publish are copied into runtime image
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Copy published output (assumes dotnet publish output is at context root)

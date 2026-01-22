@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
   AZURE_RESOURCE_GROUP: 'PoVicTranslate'
   SHARED_RESOURCE_GROUP: 'PoShared'
   ACR_NAME: 'acrposhared'
