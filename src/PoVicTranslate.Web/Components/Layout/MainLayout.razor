@@ -1,0 +1,73 @@
+@namespace PoVicTranslate.Web.Components.Layout
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+
+<RadzenLayout>
+    <!-- Top Header -->
+    <RadzenHeader>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" class="header-container">
+            <!-- Brand -->
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                <RadzenLink Path="/" class="brand-link">
+                    <span class="brand-text">PoVicTranslate</span>
+                </RadzenLink>
+            </RadzenStack>
+            
+            <!-- Navigation & Actions -->
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <!-- Desktop Navigation -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.25rem" class="nav-desktop">
+                    <RadzenButton Text="Translate" Icon="translate" ButtonStyle="ButtonStyle.Light" 
+                                  Variant="Variant.Text" Click="@(() => NavigationManager.NavigateTo("/"))" 
+                                  class="@GetNavBtnClass("/")" />
+                </RadzenStack>
+                
+                <!-- Mobile Menu Button -->
+                <RadzenButton Icon="menu" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                              Click="@ToggleMobileMenu" class="mobile-menu-btn" Size="ButtonSize.Large" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenHeader>
+
+    <!-- Mobile Menu Sidebar -->
+    <RadzenSidebar @bind-Expanded="@_mobileMenuOpen" class="mobile-sidebar">
+        <RadzenStack Gap="0.5rem" class="mobile-nav-stack">
+            <RadzenButton Text="Translate" Icon="translate" ButtonStyle="ButtonStyle.Light" 
+                          Variant="Variant.Text" Size="ButtonSize.Large"
+                          Click="@(() => { NavigationManager.NavigateTo("/"); _mobileMenuOpen = false; })" 
+                          class="@(IsActive("/") ? "mobile-nav-btn active" : "mobile-nav-btn")" />
+        </RadzenStack>
+    </RadzenSidebar>
+
+    <!-- Main Content -->
+    <RadzenBody>
+        <div class="main-content-wrapper">
+            @Body
+        </div>
+    </RadzenBody>
+</RadzenLayout>
+
+<!-- Radzen Components -->
+<RadzenDialog />
+<RadzenNotification />
+<RadzenTooltip />
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    private bool _mobileMenuOpen;
+
+    private bool IsActive(string path)
+    {
+        var currentPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        return string.IsNullOrEmpty(currentPath) ? path == "/" : $"/{currentPath}" == path;
+    }
+
+    private string GetNavBtnClass(string path) => IsActive(path) ? "nav-btn active" : "nav-btn";
+
+    private void ToggleMobileMenu() => _mobileMenuOpen = !_mobileMenuOpen;
+}

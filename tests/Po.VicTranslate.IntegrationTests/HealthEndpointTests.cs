@@ -25,7 +25,7 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task ApiHealth_ShouldReturnOk_WhenServicesAreHealthy()
     {
         // Act
-        var response = await _client.GetAsync("/api/health", TestContext.Current.CancellationToken);
+        var response = await _client.GetAsync("/health", TestContext.Current.CancellationToken);
 
         // Assert - health check should return OK when healthy or ServiceUnavailable when degraded
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.ServiceUnavailable);
@@ -35,7 +35,7 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task ApiHealth_ShouldReturnJsonContent()
     {
         // Act
-        var response = await _client.GetAsync("/api/health", TestContext.Current.CancellationToken);
+        var response = await _client.GetAsync("/health", TestContext.Current.CancellationToken);
 
         // Assert - health check should return status information
         if (response.StatusCode == HttpStatusCode.OK)
@@ -52,7 +52,7 @@ public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         var startTime = DateTime.UtcNow;
 
         // Act
-        _ = await _client.GetAsync("/api/health", TestContext.Current.CancellationToken);
+        _ = await _client.GetAsync("/health", TestContext.Current.CancellationToken);
 
         // Assert - health check should respond within 5 seconds
         var duration = DateTime.UtcNow - startTime;

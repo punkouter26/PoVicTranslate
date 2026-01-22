@@ -1,33 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <RootNamespace>Po.VicTranslate.IntegrationTests</RootNamespace>
-
-    <!-- To enable Microsoft.Testing.Platform, uncomment the following line. -->
-    <!-- <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner> -->
-    <!-- Note: to use Microsoft.Testing.Platform correctly with dotnet test: -->
-    <!-- 1. You must add dotnet.config specifying the test runner to be Microsoft.Testing.Platform -->
-    <!-- 2. You must use .NET 10 SDK or later -->
-    <!-- For more information, see https://aka.ms/dotnet-test/mtp and https://xunit.net/docs/getting-started/v3/microsoft-testing-platform -->
-    <!-- To enable code coverage with Microsoft.Testing.Platform, add a package reference to Microsoft.Testing.Extensions.CodeCoverage -->
-    <!-- https://learn.microsoft.comdotnet/core/testing/microsoft-testing-platform-extensions-code-coverage -->
+    <!-- Disable naming convention warnings for test methods -->
+    <NoWarn>$(NoWarn);CA1707;CA1852;CA1859</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4">
+    <PackageReference Include="coverlet.collector">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="FluentAssertions" Version="8.8.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.10" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
-    <PackageReference Include="xunit.v3" Version="3.1.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -42,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Po.VicTranslate.Api\Po.VicTranslate.Api.csproj" />
+    <ProjectReference Include="..\..\src\PoVicTranslate.Web\PoVicTranslate.Web.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,104 @@
+@page "/"
+@page "/translate"
+@namespace PoVicTranslate.Web.Client.Pages
+@rendermode InteractiveAuto
+@inject ITranslationOrchestrator TranslationOrchestrator
+
+<PageTitle>PoVicTranslate</PageTitle>
+
+<div class="translation-page">
+    <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" class="translation-card">
+        <RadzenText TextStyle="TextStyle.H5">PoVicTranslate</RadzenText>
+
+        @if (_viewModel.IsLoading)
+        {
+            <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        }
+
+        <!-- Song Selection -->
+        @if (_viewModel.AvailableSongs.Count > 0)
+        {
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.End">
+                <RadzenDropDown @bind-Value="@_selectedSong"
+                                Data="@_viewModel.AvailableSongs"
+                                Placeholder="Select a song..."
+                                AllowClear="true"
+                                AllowFiltering="true"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                Change="@OnSongSelectedAsync"
+                                Style="flex:1" />
+                <RadzenButton Text="Random" Icon="shuffle" ButtonStyle="ButtonStyle.Secondary"
+                              Click="@OnLoadRandomSongAsync" Variant="Variant.Outlined" />
+            </RadzenStack>
+        }
+
+        <RadzenTextArea @bind-Value="@_viewModel.InputText"
+                        Placeholder="Enter text to translate..."
+                        Rows="6"
+                        MaxLength="2000"
+                        Disabled="@_viewModel.IsTranslating" />
+
+        <RadzenButton Text="@(_viewModel.IsTranslating ? "Translating..." : "Translate")"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Size="ButtonSize.Large"
+                      Click="@OnTranslateAsync"
+                      Disabled="@(!_viewModel.CanTranslate)"
+                      IsBusy="@_viewModel.IsTranslating" />
+
+        @if (!string.IsNullOrEmpty(_viewModel.TranslatedText))
+        {
+            <RadzenCard class="results-card">
+                <RadzenText TextStyle="TextStyle.H6">Translation</RadzenText>
+                <p class="translated-text">@_viewModel.TranslatedText</p>
+            </RadzenCard>
+        }
+
+        @if (!string.IsNullOrEmpty(_viewModel.ErrorMessage))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Dark"
+                         AllowClose="true" Close="@(() => _viewModel.ErrorMessage = string.Empty)">
+                <span>@_viewModel.ErrorMessage</span>
+            </RadzenAlert>
+        }
+    </RadzenStack>
+</div>
+
+@code {
+    private readonly ViewModels.TranslationViewModel _viewModel = new();
+    private string? _selectedSong;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TranslationOrchestrator.InitializeAsync(_viewModel);
+    }
+
+    private async Task OnSongSelectedAsync(object? value)
+    {
+        var selectedSong = value?.ToString();
+        if (string.IsNullOrEmpty(selectedSong))
+        {
+            _viewModel.InputText = string.Empty;
+            return;
+        }
+
+        await TranslationOrchestrator.LoadSongAsync(_viewModel, selectedSong);
+    }
+
+    private async Task OnLoadRandomSongAsync()
+    {
+        await TranslationOrchestrator.LoadRandomSongAsync(_viewModel);
+        _selectedSong = null;
+    }
+
+    private async Task OnTranslateAsync()
+    {
+        try
+        {
+            await TranslationOrchestrator.TranslateTextAsync(_viewModel);
+        }
+        catch (Exception ex)
+        {
+            _viewModel.ErrorMessage = $"Translation failed: {ex.Message}";
+        }
+    }
+}

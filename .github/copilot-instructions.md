@@ -1,102 +1,62 @@
-# PoVicTranslate - AI Agent Instructions
-
-## 1. Project Identity & SDK Standards
-- **Unified ID**: `PoVicTranslate` for Azure resources, `Po.VicTranslate.*` for namespaces
-- **SDK**: .NET 10 exclusively, pinned in `global.json`
-- **C# 14+**: Primary constructors, collection expressions, `field` keyword, `<IsAotCompatible>true</IsAotCompatible>`, `TreatWarningsAsErrors`
-- **Packages**: Central management via `Directory.Packages.props`
-
-## 2. Architecture & Logic Flow
-- **Vertical Slice**: Feature folders with Minimal API endpoint + DTOs + Business Logic self-contained
-- **Result Pattern**: `ErrorOr` library with `.Match()` returning `TypedResults` (200 OK / 400 BadRequest)
-- **Safety**: `<Nullable>enable</Nullable>` and `<ImplicitUsings>enable</ImplicitUsings>` mandatory
-
-### Minimal API Pattern (.NET 10)
-```csharp
-// Use TypedResults with union types for explicit response contracts
-app.MapGet("/todo/{id}", Results<Ok<Todo>, NotFound, BadRequest> (int id) => id switch
-{
-    <= 0 => TypedResults.BadRequest(),
-    >= 1 and <= 10 => TypedResults.Ok(new Todo(id, "Task")),
-    _ => TypedResults.NotFound()
-});
-
-// POST with model binding
-app.MapPost("/todos", (TodoBindable todo) => todo);
-```
-
-### Current Structure
-```
-src/Po.VicTranslate.Api/     → ASP.NET Core hosts Blazor WASM
-├── Controllers/             → Translation, Lyrics, Speech, Health
-├── Services/                → Business logic (Template Method pattern)
-├── Services/Validation/     → SOLID validators (IInputValidator, IDiagnosticValidator)
-└── HealthChecks/            → Azure OpenAI, Speech, Internet connectivity
-```
-
-## 3. Data & Mapping
-- **Mapperly**: Source-generated DTO-to-Entity mapping (compile-time safe)
-- **Azure Table Storage**: Lightweight expression visitors for DTO filters
-- **Resilience**: Polly pipelines (Retry + jitter, Circuit Breaker) on storage/HTTP clients
-
-## 4. Authentication & UI (BFF Pattern)
-- **BFF**: API proxies security for Blazor WASM; client uses Secure Cookies only (no JWTs)
-- **Components**: Smart (Pages fetch data) vs Dumb (presentational children)
-- **State**: Scoped `StateContainer` with `OnChange` event; see `TranslationViewModel`
-- **Hydration**: `[PersistentComponentState]` for SSR→WASM transitions
-
-## 5. Infrastructure & DevOps
-- **Bicep**: `infra/main.bicep` (subscription-scoped) + `resources.bicep` (App Service Linux)
-- **Secrets**: Azure Key Vault via `DefaultAzureCredential`; Azurite locally
-- **Config**: `appsettings.json` = non-sensitive only; secrets via Key Vault References
-- **Deployment**: Use `azd up` (validate with `azd provision --preview` first)
-
-## 6. Health & Monitoring
-- **Endpoints**: `/api/health` (full), `/api/health/live` (liveness), `/api/health/ready` (readiness)
-- **Logging**: Serilog → Console (dev) / Application Insights (prod), Information+ in prod
-- **Telemetry**: OpenTelemetry → Azure Monitor; custom metrics via `ICustomTelemetryService`
-
-## 7. Development Workflow
-
-### Commands
-```powershell
-# Run API (serves Blazor client)
-dotnet run --project src/Po.VicTranslate.Api
-
-# Tests with coverage
-dotnet test --collect:"XPlat Code Coverage"
-
-# E2E (Playwright + Chromium)
-cd tests/Po.VicTranslate.E2ETests
-$env:DISABLE_HTTPS_REDIRECTION="true"; npx playwright test
-```
-
-### Configuration (User Secrets)
-```powershell
-cd src/Po.VicTranslate.Api
-dotnet user-secrets set "ApiSettings:AzureOpenAIEndpoint" "https://..."
-dotnet user-secrets set "ApiSettings:AzureOpenAIApiKey" "..."
-dotnet user-secrets set "ApiSettings:AzureOpenAIDeploymentName" "gpt-4"
-dotnet user-secrets set "ApiSettings:AzureSpeechRegion" "eastus2"
-dotnet user-secrets set "ApiSettings:AzureSpeechSubscriptionKey" "..."
-```
-
-### Testing Strategy
-| Type | Framework | Pattern |
-|------|-----------|---------|
-| Unit | xUnit + Moq + FluentAssertions | TDD: Red → Green → Refactor |
-| Integration | WebApplicationFactory + Azurite | Happy path per endpoint |
-| E2E | Playwright TypeScript | Chromium + mobile emulators |
-
-### Ports
-- HTTP: 5000 / HTTPS: 5001 (dev)
-- E2E: 5002 with `DISABLE_HTTPS_REDIRECTION=true`
-
-## 8. Azure Best Practices
-- **Authentication**: Use Managed Identity for Azure-hosted resources; never hardcode credentials
-- **Error Handling**: Implement retry with exponential backoff for transient failures
-- **Security**: Use Key Vault for secrets; disable key-based access for storage/Cosmos
-- **IaC**: Place Bicep files in `infra/`; use latest API versions; validate with `what-if`
-- **Monitoring**: Log Information+ in production; implement circuit breakers for external calls
+General Engineering Principles
+Unified Identity: Use Po{SolutionName} as the master prefix for all namespaces, Azure Resource Groups, and Aspire resource names (e.g., PoTask1.API, rg-PoTask1-prod).
+Global Cleanup: Actively delete unused files, dead code, or obsolete assets. Maintain a "zero-waste" codebase.
+Directory.Build.props: Enforce <TreatWarningsAsErrors>true</TreatWarningsAsErrors> and <Nullable>enable</Nullable> at the repository root to ensure all projects inherit strict safety standards.
+Have /health endpoint on the server project that checks connections to all APIs and databases used
+Context Management: Maintain a .copilotignore file to exclude bin/, obj/, and node_modules/, keeping AI focus on source logic.
+Modern Tooling: Use Context7 MCP to fetch the latest SDKs and NuGet versions, ensuring the AI agent is working with up-to-date documentation.
+Package Management: Use Central Package Management (CPM) via Directory.Packages.props with transitive pinning enabled.
+Standard: Use DefaultAzureCredential for all environment-agnostic resource access.
+Local Development: Primary secrets reside in dotnet user-secrets.
+Cloud/Production: Use Azure Key Vault via Managed Identity.
+Shared Resources: All keys/secrets are stored in the PoShared resource group in the Key Vault service; use these as a local fallback only if user-secrets are absent.
+When deploying services to Azure make sure you use this subscription Punkouter26
+Bbb8dfbe-9169-432f-9b7a-fbf861b51037
+Use the Managed Identity as needed that is already in the PoShared resource group
+Use Context7 MCP to verify latest versions of .NET and any nuget/npm packages
+Create .http files that can be helpful for debugging API endpoints (https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-10.0)
+Look in the Azure resource group PoShared for services to use
+Looking into the Key Vault service contained in the resource group PoShared for Secrets and Keys 
+Use Kay Vault when running code locally and in Azure
 
 
+
+
+Create a set of 3 test project / Unit (C#)/ Integration (C#) /E2E (typescript)
+.NET Unit Tests: Focus on pure logic and domain rules (High speed).
+.NET Integration Tests: Target the API and Database. Use Testcontainers to spin up ephemeral SQL/Redis instances to verify real-world behavior.
+Playwright E2E headless (TypeScript) (Chromium and mobile only):
+Scope: Critical user paths only.
+Constraints: Limit rendering to Chromium and Mobile.
+Workflow: Run headed during development to verify functionality alongside the local server.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+App Stack: Blazor Web App + Aspire (Azure ACA Containers)
+Template: Target .NET 10 Unified Blazor Web App (Server SSR + WASM Client).
+Rendering Policy: Default to Static SSR. Elevate to InteractiveAuto only for specific components requiring low-latency responsiveness.
+Vertical Slice Architecture (VSA): Organize by features, not layers. Group Endpoints, DTOs, and Logic within single, flattened feature folders.
+Minimalist API: If the WASM client requires data, create minimal endpoints within the Server project. A separate API project is not required but instead the Server project will expose the services using .NET minimal APIs
+Use OpenApi instead of Swashbuckle for API endpoint UI
+
+
+Use Aspire CLI https://aspire.dev/get-started/install-cli/
+Aspire First: Use .NET Aspire (AppHost and ServiceDefaults) for all local and cloud orchestration.
+Service Discovery: Use Aspire project references; never hardcode ports or connection strings.
+Telemetry: Enable OpenTelemetry (Logs, Traces, Metrics) globally, aggregating into Application Insights within the PoShared resource group.
+Azd-Driven Infra: Use azd up to generate and deploy infrastructure (Azure Container Apps) directly from the Aspire model.
+Po<solutionName> resource group in Azure should container a container app, table storage (if uses azure table storage)
+PoShared will contain all other services needed and will have a key vault service for saving secrets as needed

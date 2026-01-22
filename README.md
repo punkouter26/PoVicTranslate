@@ -2,12 +2,13 @@
 
 [![Build Status](https://dev.azure.com/YOUR-ORG/PoVicTranslate/_apis/build/status/PoVicTranslate-CI-CD?branchName=main)](https://dev.azure.com/YOUR-ORG/PoVicTranslate/_build/latest?definitionId=YOUR-PIPELINE-ID&branchName=main)
 [![Code Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](./docs/coverage/)
-[![.NET Version](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/download/dotnet/9.0)
+[![.NET Version](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![Aspire](https://img.shields.io/badge/Aspire-9.2.0-purple)](https://learn.microsoft.com/dotnet/aspire/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
 **Victorian English Translation & Lyrics Management System**
 
-A full-stack web application that translates modern English to Victorian-era English using Azure OpenAI, manages song lyrics with Cockney rhyming slang support, and provides text-to-speech synthesis. Built with ASP.NET Core 9.0 and Blazor WebAssembly.
+A full-stack web application that translates modern English to Victorian-era English using Azure OpenAI, manages song lyrics with Cockney rhyming slang support, and provides text-to-speech synthesis. Built with .NET 10 Unified Blazor Web App and .NET Aspire.
 
 ---
 
@@ -20,9 +21,10 @@ PoVicTranslate is a modern web application that bridges contemporary and Victori
 - **AI-Powered Translation**: Converts modern English to Victorian-era English using Azure OpenAI GPT-4
 - **Lyrics Management**: Full CRUD operations for song lyrics with Cockney rhyming slang support
 - **Audio Synthesis**: Text-to-speech conversion using Azure Cognitive Services
-- **Real-time Telemetry**: Application Insights integration with custom metrics
+- **Real-time Telemetry**: OpenTelemetry + Application Insights integration with custom metrics
 - **Health Monitoring**: Comprehensive health checks for all external dependencies
-- **Interactive UI**: Modern Blazor WebAssembly client with responsive design
+- **Interactive UI**: Modern Unified Blazor Web App with SSR + InteractiveAuto rendering
+- **Cloud-Native**: .NET Aspire orchestration for local dev and Azure Container Apps deployment
 
 ---
 
@@ -30,16 +32,18 @@ PoVicTranslate is a modern web application that bridges contemporary and Victori
 
 ### Technology Stack
 
-- **Backend**: ASP.NET Core 9.0 Web API
-- **Frontend**: Blazor WebAssembly (.NET 9.0)
+- **Framework**: .NET 10 with Aspire 9.2.0
+- **Web App**: Unified Blazor Web App (Server SSR + WebAssembly)
+- **API**: Minimal APIs with OpenAPI
 - **Cloud Services**: 
   - Azure OpenAI (GPT-4)
   - Azure Cognitive Services (Speech)
   - Azure Application Insights
-  - Azure App Service
-- **Logging**: Serilog with Application Insights sink
-- **Testing**: xUnit, bUnit, FluentAssertions, Playwright
-- **CI/CD**: Azure DevOps with automated deployment
+  - Azure Key Vault (PoShared resource group)
+  - Azure Container Apps
+- **Logging**: Serilog with Application Insights sink + OpenTelemetry
+- **Testing**: xUnit v3, bUnit, FluentAssertions, Testcontainers, Playwright
+- **CI/CD**: Azure DevOps with azd deployment
 - **Monitoring**: Application Insights with custom telemetry and alerts
 
 ### Project Structure
@@ -47,15 +51,17 @@ PoVicTranslate is a modern web application that bridges contemporary and Victori
 ```
 PoVicTranslate/
 ├── src/
-│   ├── Po.VicTranslate.Api/          # ASP.NET Core Web API
-│   └── Po.VicTranslate.Client/       # Blazor WebAssembly Client
+│   ├── PoVicTranslate.AppHost/       # Aspire orchestration host
+│   ├── PoVicTranslate.ServiceDefaults/ # Shared Aspire defaults
+│   ├── PoVicTranslate.Web/           # Unified Blazor Web App (Server)
+│   └── PoVicTranslate.Web.Client/    # Blazor WebAssembly Client
 ├── tests/
-│   ├── Po.VicTranslate.UnitTests/    # Unit tests (xUnit)
-│   ├── Po.VicTranslate.IntegrationTests/  # Integration tests
+│   ├── Po.VicTranslate.UnitTests/    # Unit tests (xUnit v3)
+│   ├── Po.VicTranslate.IntegrationTests/  # Integration tests with Testcontainers
 │   └── Po.VicTranslate.E2ETests/     # End-to-end tests (Playwright)
 ├── infra/                            # Azure Bicep infrastructure
-├── docs/                             # Documentation and diagrams
-└── .github/workflows/                # CI/CD pipeline
+├── docs/                             # Documentation and KQL queries
+└── .github/                          # CI/CD pipeline and copilot instructions
 ```
 
 ---
@@ -64,12 +70,15 @@ PoVicTranslate/
 
 ### Prerequisites
 
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- [.NET Aspire CLI](https://aspire.dev/get-started/install-cli/)
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
+- [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 - [Node.js 18+](https://nodejs.org/) (for E2E tests)
 - Azure Subscription with:
   - Azure OpenAI Service access
   - Azure Cognitive Services (Speech)
+  - Access to PoShared resource group (Key Vault)
 
 ### Local Development Setup
 

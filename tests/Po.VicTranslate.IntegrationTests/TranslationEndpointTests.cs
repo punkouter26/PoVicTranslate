@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using FluentAssertions;
 using System.Net;
 using System.Net.Http.Json;
-using Po.VicTranslate.Api.Models;
+using PoVicTranslate.Web.Models;
 using Xunit;
 
 namespace Po.VicTranslate.IntegrationTests;
@@ -22,10 +22,7 @@ public class TranslationEndpointTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Translate_WithValidText_ShouldReturnTranslation()
     {
         // Arrange
-        var request = new TranslationRequest
-        {
-            Text = "Hello, how are you today?"
-        };
+        var request = new TranslationRequest("Hello, how are you today?");
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/Translation", request, cancellationToken: TestContext.Current.CancellationToken);
@@ -43,10 +40,7 @@ public class TranslationEndpointTests : IClassFixture<WebApplicationFactory<Prog
     public async Task Translate_WithEmptyText_ShouldReturnBadRequest(string? text)
     {
         // Arrange
-        var request = new TranslationRequest
-        {
-            Text = text!
-        };
+        var request = new TranslationRequest(text!);
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/Translation", request, cancellationToken: TestContext.Current.CancellationToken);
@@ -60,10 +54,7 @@ public class TranslationEndpointTests : IClassFixture<WebApplicationFactory<Prog
     {
         // Arrange
         var longText = string.Join(" ", Enumerable.Repeat("This is a test sentence.", 100));
-        var request = new TranslationRequest
-        {
-            Text = longText
-        };
+        var request = new TranslationRequest(longText);
 
         // Act
         var response = await _client.PostAsJsonAsync("/api/Translation", request, cancellationToken: TestContext.Current.CancellationToken);

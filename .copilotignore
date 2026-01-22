@@ -1,0 +1,29 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# Node modules
+node_modules/
+
+# IDE/Editor
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Test results
+TestResults/
+playwright-report/
+test-results/
+
+# Logs
+*.log
+log.txt
+
+# Azure/Aspire
+.azure/
+.aspire/
+
+# Packages
+packages/

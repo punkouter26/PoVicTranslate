@@ -2,9 +2,9 @@ using Xunit;
 using FluentAssertions;
 using Moq;
 using Microsoft.Extensions.Logging;
-using Po.VicTranslate.Api.Models;
-using Po.VicTranslate.Api.Services;
-using Po.VicTranslate.Api.Services.Validation;
+using PoVicTranslate.Web.Models;
+using PoVicTranslate.Web.Services;
+using PoVicTranslate.Web.Services.Validation;
 
 namespace Po.VicTranslate.UnitTests.Services.Validation;
 
@@ -23,9 +23,9 @@ public class ConfigurationValidatorTests
         _mockSpeechValidator = new Mock<IDiagnosticValidator>();
         _mockInternetValidator = new Mock<IDiagnosticValidator>();
 
-        _mockOpenAIValidator.Setup(v => v.CheckName).Returns("Azure OpenAI Configuration");
-        _mockSpeechValidator.Setup(v => v.CheckName).Returns("Azure Speech Service Connection");
-        _mockInternetValidator.Setup(v => v.CheckName).Returns("Internet Connectivity");
+        _mockOpenAIValidator.Setup(v => v.Name).Returns("Azure OpenAI Configuration");
+        _mockSpeechValidator.Setup(v => v.Name).Returns("Azure Speech Service Connection");
+        _mockInternetValidator.Setup(v => v.Name).Returns("Internet Connectivity");
 
         var validators = new List<IDiagnosticValidator>
         {
@@ -38,132 +38,110 @@ public class ConfigurationValidatorTests
     }
 
     [Fact]
-    public void Constructor_WithNullValidators_ThrowsArgumentNullException()
-    {
-        // Act
-        var act = () => new ConfigurationValidator(null!, _mockLogger.Object);
-
-        // Assert
-        act.Should().Throw<ArgumentNullException>();
-    }
-
-    [Fact]
-    public void ValidateAzureOpenAI_DelegatesToCorrectValidator()
+    public async Task ValidateAllAsync_WhenAllValidatorsPass_ReturnsTrue()
     {
         // Arrange
-        var expectedResult = new DiagnosticResult
-        {
-            CheckName = "Azure OpenAI Configuration",
-            Success = true,
-            Message = "OpenAI config is valid"
-        };
-
         _mockOpenAIValidator
             .Setup(v => v.ValidateAsync())
-            .ReturnsAsync(expectedResult);
-
-        // Act
-        var result = _validator.ValidateAzureOpenAI();
-
-        // Assert
-        result.Should().BeEquivalentTo(expectedResult);
-        _mockOpenAIValidator.Verify(v => v.ValidateAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task ValidateAzureSpeechAsync_DelegatesToCorrectValidator()
-    {
-        // Arrange
-        var expectedResult = new DiagnosticResult
-        {
-            CheckName = "Azure Speech Service Connection",
-            Success = true,
-            Message = "Speech service connected"
-        };
+            .ReturnsAsync(new DiagnosticResult("Azure OpenAI Configuration", true, "Healthy", "All checks passed"));
 
         _mockSpeechValidator
             .Setup(v => v.ValidateAsync())
-            .ReturnsAsync(expectedResult);
-
-        // Act
-        var result = await _validator.ValidateAzureSpeechAsync();
-
-        // Assert
-        result.Should().BeEquivalentTo(expectedResult);
-        _mockSpeechValidator.Verify(v => v.ValidateAsync(), Times.Once);
-    }
-
-    [Fact]
-    public void ValidateInternetConnectivity_DelegatesToCorrectValidator()
-    {
-        // Arrange
-        var expectedResult = new DiagnosticResult
-        {
-            CheckName = "Internet Connectivity",
-            Success = true,
-            Message = "Internet is available"
-        };
+            .ReturnsAsync(new DiagnosticResult("Azure Speech Service Connection", true, "Healthy", "All checks passed"));
 
         _mockInternetValidator
             .Setup(v => v.ValidateAsync())
-            .ReturnsAsync(expectedResult);
+            .ReturnsAsync(new DiagnosticResult("Internet Connectivity", true, "Healthy", "All checks passed"));
 
         // Act
-        var result = _validator.ValidateInternetConnectivity();
+        var result = await _validator.ValidateAllAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(expectedResult);
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ValidateAllAsync_WhenOneValidatorFails_ReturnsFalse()
+    {
+        // Arrange
+        _mockOpenAIValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Azure OpenAI Configuration", true, "Healthy", "All checks passed"));
+
+        _mockSpeechValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Azure Speech Service Connection", false, "Unhealthy", "Configuration missing"));
+
+        _mockInternetValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Internet Connectivity", true, "Healthy", "All checks passed"));
+
+        // Act
+        var result = await _validator.ValidateAllAsync();
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ValidateAllAsync_WhenAllValidatorsFail_ReturnsFalse()
+    {
+        // Arrange
+        _mockOpenAIValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Azure OpenAI Configuration", false, "Unhealthy", "Configuration missing"));
+
+        _mockSpeechValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Azure Speech Service Connection", false, "Unhealthy", "Configuration missing"));
+
+        _mockInternetValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Internet Connectivity", false, "Unhealthy", "No connection"));
+
+        // Act
+        var result = await _validator.ValidateAllAsync();
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ValidateAllAsync_WithEmptyValidators_ReturnsTrue()
+    {
+        // Arrange
+        var emptyValidators = new List<IDiagnosticValidator>();
+        var validator = new ConfigurationValidator(emptyValidators, _mockLogger.Object);
+
+        // Act
+        var result = await validator.ValidateAllAsync();
+
+        // Assert
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ValidateAllAsync_CallsAllValidators()
+    {
+        // Arrange
+        _mockOpenAIValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Azure OpenAI Configuration", true, "Healthy", null));
+
+        _mockSpeechValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Azure Speech Service Connection", true, "Healthy", null));
+
+        _mockInternetValidator
+            .Setup(v => v.ValidateAsync())
+            .ReturnsAsync(new DiagnosticResult("Internet Connectivity", true, "Healthy", null));
+
+        // Act
+        await _validator.ValidateAllAsync();
+
+        // Assert
+        _mockOpenAIValidator.Verify(v => v.ValidateAsync(), Times.Once);
+        _mockSpeechValidator.Verify(v => v.ValidateAsync(), Times.Once);
         _mockInternetValidator.Verify(v => v.ValidateAsync(), Times.Once);
-    }
-
-    [Fact]
-    public void ValidateAzureOpenAI_WhenValidatorNotRegistered_ReturnsFailureResult()
-    {
-        // Arrange
-        var emptyValidators = new List<IDiagnosticValidator>();
-        var validator = new ConfigurationValidator(emptyValidators, _mockLogger.Object);
-
-        // Act
-        var result = validator.ValidateAzureOpenAI();
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeFalse();
-        result.CheckName.Should().Be("Azure OpenAI Configuration");
-        result.Message.Should().Be("Validator not registered");
-    }
-
-    [Fact]
-    public async Task ValidateAzureSpeechAsync_WhenValidatorNotRegistered_ReturnsFailureResult()
-    {
-        // Arrange
-        var emptyValidators = new List<IDiagnosticValidator>();
-        var validator = new ConfigurationValidator(emptyValidators, _mockLogger.Object);
-
-        // Act
-        var result = await validator.ValidateAzureSpeechAsync();
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeFalse();
-        result.CheckName.Should().Be("Azure Speech Service Connection");
-        result.Message.Should().Be("Validator not registered");
-    }
-
-    [Fact]
-    public void ValidateInternetConnectivity_WhenValidatorNotRegistered_ReturnsFailureResult()
-    {
-        // Arrange
-        var emptyValidators = new List<IDiagnosticValidator>();
-        var validator = new ConfigurationValidator(emptyValidators, _mockLogger.Object);
-
-        // Act
-        var result = validator.ValidateInternetConnectivity();
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Success.Should().BeFalse();
-        result.CheckName.Should().Be("Internet Connectivity");
-        result.Message.Should().Be("Validator not registered");
     }
 }

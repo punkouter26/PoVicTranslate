@@ -1,0 +1,43 @@
+@page "/error"
+@using System.Diagnostics
+@namespace PoVicTranslate.Web.Components.Pages
+
+<PageTitle>Error - PoVicTranslate</PageTitle>
+
+<div class="error-page">
+    <RadzenCard class="error-card">
+        <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="1rem">
+            <RadzenIcon Icon="error" Style="font-size: 4rem; color: var(--rz-danger);" />
+            <RadzenText TextStyle="TextStyle.H4">Error</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body1">
+                An error occurred while processing your request.
+            </RadzenText>
+
+            @if (ShowRequestId)
+            {
+                <RadzenText TextStyle="TextStyle.Caption">
+                    <strong>Request ID:</strong> @RequestId
+                </RadzenText>
+            }
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                <RadzenButton Text="Go Home" Icon="home" Click="@(() => NavigationManager.NavigateTo("/"))" />
+                <RadzenButton Text="Reload" Icon="refresh" ButtonStyle="ButtonStyle.Secondary" Click="@(() => NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true))" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+</div>
+
+@code {
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+
+    public string? RequestId { get; set; }
+    public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized()
+    {
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+    }
+
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+}

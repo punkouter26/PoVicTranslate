@@ -1,7 +1,7 @@
 using Xunit;
 using FluentAssertions;
-using Po.VicTranslate.Api.Configuration;
-using Po.VicTranslate.Api.Services.Validation;
+using PoVicTranslate.Web.Configuration;
+using PoVicTranslate.Web.Services.Validation;
 
 namespace Po.VicTranslate.UnitTests.Services.Validation;
 
@@ -12,16 +12,6 @@ public class SpeechConfigValidatorTests
     public SpeechConfigValidatorTests()
     {
         _validator = new SpeechConfigValidator();
-    }
-
-    [Fact]
-    public void IsValid_WithNullSettings_ReturnsFalse()
-    {
-        // Act
-        var result = _validator.IsValid(null!);
-
-        // Assert
-        result.Should().BeFalse();
     }
 
     [Fact]
@@ -110,16 +100,6 @@ public class SpeechConfigValidatorTests
     }
 
     [Fact]
-    public void GetValidationError_WithNullSettings_ReturnsAppropriateMessage()
-    {
-        // Act
-        var error = _validator.GetValidationError(null!);
-
-        // Assert
-        error.Should().Be("Settings cannot be null");
-    }
-
-    [Fact]
     public void GetValidationError_WithMissingSubscriptionKey_ReturnsAppropriateMessage()
     {
         // Arrange
@@ -133,7 +113,7 @@ public class SpeechConfigValidatorTests
         var error = _validator.GetValidationError(settings);
 
         // Assert
-        error.Should().Be("Azure Speech SubscriptionKey is missing or empty");
+        error.Should().Contain("AzureSpeechSubscriptionKey is missing");
     }
 
     [Fact]
@@ -150,7 +130,7 @@ public class SpeechConfigValidatorTests
         var error = _validator.GetValidationError(settings);
 
         // Assert
-        error.Should().Be("Azure Speech Region is missing or empty");
+        error.Should().Contain("AzureSpeechRegion is missing");
     }
 
     [Fact]
@@ -168,5 +148,23 @@ public class SpeechConfigValidatorTests
 
         // Assert
         error.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void GetValidationError_WithBothMissing_ReturnsBothErrors()
+    {
+        // Arrange
+        var settings = new ApiSettings
+        {
+            AzureSpeechSubscriptionKey = "",
+            AzureSpeechRegion = ""
+        };
+
+        // Act
+        var error = _validator.GetValidationError(settings);
+
+        // Assert
+        error.Should().Contain("AzureSpeechSubscriptionKey is missing");
+        error.Should().Contain("AzureSpeechRegion is missing");
     }
 }

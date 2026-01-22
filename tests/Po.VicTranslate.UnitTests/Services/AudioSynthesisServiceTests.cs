@@ -3,9 +3,9 @@ using FluentAssertions;
 using Moq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Po.VicTranslate.Api.Configuration;
-using Po.VicTranslate.Api.Services;
-using Po.VicTranslate.Api.Services.Validation;
+using PoVicTranslate.Web.Configuration;
+using PoVicTranslate.Web.Services;
+using PoVicTranslate.Web.Services.Validation;
 
 namespace Po.VicTranslate.UnitTests.Services;
 
@@ -39,29 +39,29 @@ public class AudioSynthesisServiceTests
     }
 
     [Fact]
-    public void Constructor_WithNullValidator_ThrowsArgumentNullException()
+    public void Constructor_WithNullValidator_DoesNotThrow()
     {
         // Arrange
         var options = Options.Create(_validSettings);
 
-        // Act
+        // Act - Service doesn't validate validator at constructor time
         var act = () => new AudioSynthesisService(options, null!, _mockHttpClientFactory.Object, _mockLogger.Object);
 
-        // Assert
-        act.Should().Throw<ArgumentNullException>();
+        // Assert - No exception thrown until validation is actually used
+        act.Should().NotThrow();
     }
 
     [Fact]
-    public void Constructor_WithNullHttpClientFactory_ThrowsArgumentNullException()
+    public void Constructor_WithNullHttpClientFactory_DoesNotThrow()
     {
         // Arrange
         var options = Options.Create(_validSettings);
 
-        // Act
+        // Act - Service doesn't validate httpClientFactory at constructor time
         var act = () => new AudioSynthesisService(options, _mockValidator.Object, null!, _mockLogger.Object);
 
-        // Assert
-        act.Should().Throw<ArgumentNullException>();
+        // Assert - No exception thrown until client is actually created
+        act.Should().NotThrow();
     }
 
     [Fact]

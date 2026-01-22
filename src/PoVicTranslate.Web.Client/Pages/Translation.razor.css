@@ -1,0 +1,22 @@
+.translation-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.translation-card {
+    background: var(--rz-base-background-color);
+    padding: 1.5rem;
+    border-radius: var(--rz-border-radius);
+    box-shadow: var(--rz-shadow-1);
+}
+
+.results-card {
+    margin-top: 1rem;
+}
+
+.translated-text {
+    white-space: pre-wrap;
+    font-style: italic;
+    line-height: 1.6;
+}

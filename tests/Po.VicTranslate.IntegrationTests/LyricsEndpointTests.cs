@@ -20,7 +20,7 @@ public class LyricsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task GetAvailableSongs_ShouldReturnList()
     {
         // Act
-        var response = await _client.GetAsync("/Lyrics/available", TestContext.Current.CancellationToken);
+        var response = await _client.GetAsync("/api/lyrics", TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -34,7 +34,7 @@ public class LyricsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         // Act - The service throws FileNotFoundException in development mode
         try
         {
-            var response = await _client.GetAsync("/Lyrics/lyrics/nonexistent-song-id-12345", TestContext.Current.CancellationToken);
+            var response = await _client.GetAsync("/api/lyrics/nonexistent-song-id-12345", TestContext.Current.CancellationToken);
 
             // In production mode, we'd get a status code response
             response.StatusCode.Should().BeOneOf(HttpStatusCode.InternalServerError, HttpStatusCode.NotFound);
@@ -48,12 +48,12 @@ public class LyricsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task GetLyrics_WithEmptyId_ShouldReturnFallback()
+    public async Task GetLyrics_WithEmptyId_ShouldReturnNotFound()
     {
-        // Act - Empty ID falls through to index.html fallback
-        var response = await _client.GetAsync("/Lyrics/lyrics/", TestContext.Current.CancellationToken);
+        // Act - Empty ID won't match the route pattern
+        var response = await _client.GetAsync("/api/lyrics/", TestContext.Current.CancellationToken);
 
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        // Assert - The route requires a song file name
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
     }
 }

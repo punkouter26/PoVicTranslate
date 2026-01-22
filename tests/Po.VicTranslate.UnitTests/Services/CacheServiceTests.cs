@@ -2,7 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Po.VicTranslate.Api.Services.Caching;
+using PoVicTranslate.Web.Services.Caching;
 using Xunit;
 
 namespace Po.VicTranslate.UnitTests.Services;
@@ -10,7 +10,7 @@ namespace Po.VicTranslate.UnitTests.Services;
 public class CacheServiceTests : IDisposable
 {
     private readonly Mock<ILogger<CacheService>> _mockLogger;
-    private readonly IMemoryCache _memoryCache;
+    private readonly MemoryCache _memoryCache;
     private readonly CacheService _cacheService;
 
     public CacheServiceTests()
@@ -53,193 +53,91 @@ public class CacheServiceTests : IDisposable
     {
         // Arrange
         var key = "test-key";
-        var expectedValue = "test-value";
+        var expectedValue = "cached-value";
+        var factoryCallCount = 0;
 
         // First call to populate cache
         await _cacheService.GetOrCreateAsync(
             key,
-            async () => await Task.FromResult(expectedValue));
-
-        var factoryExecuted = false;
+            async () =>
+            {
+                factoryCallCount++;
+                return await Task.FromResult(expectedValue);
+            });
 
         // Act - Second call should hit cache
         var result = await _cacheService.GetOrCreateAsync(
             key,
             async () =>
             {
-                factoryExecuted = true;
-                return await Task.FromResult("different-value");
+                factoryCallCount++;
+                return await Task.FromResult("new-value");
             });
 
         // Assert
-        factoryExecuted.Should().BeFalse();
+        factoryCallCount.Should().Be(1);
         result.Should().Be(expectedValue);
     }
 
     [Fact]
-    public async Task GetOrCreateAsync_WithAbsoluteExpiration_ShouldExpireAfterTime()
+    public async Task GetOrCreateAsync_WithCustomExpiration_ShouldExpireAfterTime()
     {
         // Arrange
-        var key = "test-key";
-        var firstValue = "first-value";
-        var secondValue = "second-value";
+        var key = "expiring-key";
+        var initialValue = "initial";
+        var updatedValue = "updated";
+        var shortExpiration = TimeSpan.FromMilliseconds(100);
 
-        // Act - First call with very short expiration (50ms)
+        // Populate cache with short expiration
         await _cacheService.GetOrCreateAsync(
             key,
-            async () => await Task.FromResult(firstValue),
-            absoluteExpiration: TimeSpan.FromMilliseconds(50));
+            () => Task.FromResult(initialValue),
+            shortExpiration);
 
         // Wait for expiration
-        await Task.Delay(100, TestContext.Current.CancellationToken);
+        await Task.Delay(150, TestContext.Current.CancellationToken);
 
-        // Second call should execute factory again
+        // Act - Should get new value
         var result = await _cacheService.GetOrCreateAsync(
             key,
-            async () => await Task.FromResult(secondValue));
+            () => Task.FromResult(updatedValue),
+            shortExpiration);
 
         // Assert
-        result.Should().Be(secondValue);
+        result.Should().Be(updatedValue);
     }
 
     [Fact]
-    public void GetStatistics_WithNoActivity_ShouldReturnZeros()
-    {
-        // Act
-        var stats = _cacheService.GetStatistics();
-
-        // Assert
-        stats.TotalHits.Should().Be(0);
-        stats.TotalMisses.Should().Be(0);
-        stats.TotalEvictions.Should().Be(0);
-        stats.HitRate.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task GetStatistics_AfterCacheMiss_ShouldIncrementMisses()
+    public async Task Remove_ShouldRemoveEntryFromCache()
     {
         // Arrange
-        var key = "test-key";
+        var key = "remove-test-key";
+        var initialValue = "initial";
+        var newValue = "new";
+        var factoryCallCount = 0;
 
-        // Act
         await _cacheService.GetOrCreateAsync(
             key,
-            async () => await Task.FromResult("value"));
-
-        var stats = _cacheService.GetStatistics();
-
-        // Assert
-        stats.TotalMisses.Should().Be(1);
-        stats.TotalHits.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task GetStatistics_AfterCacheHit_ShouldIncrementHits()
-    {
-        // Arrange
-        var key = "test-key";
-
-        // First call - miss
-        await _cacheService.GetOrCreateAsync(
-            key,
-            async () => await Task.FromResult("value"));
-
-        // Act - Second call - hit
-        await _cacheService.GetOrCreateAsync(
-            key,
-            async () => await Task.FromResult("value"));
-
-        var stats = _cacheService.GetStatistics();
-
-        // Assert
-        stats.TotalHits.Should().Be(1);
-        stats.TotalMisses.Should().Be(1);
-    }
-
-    [Fact]
-    public async Task GetStatistics_ShouldCalculateHitRate()
-    {
-        // Arrange
-        var key = "test-key";
-
-        // 1 miss
-        await _cacheService.GetOrCreateAsync(
-            key,
-            async () => await Task.FromResult("value"));
-
-        // 3 hits
-        await _cacheService.GetOrCreateAsync(key, async () => await Task.FromResult("value"));
-        await _cacheService.GetOrCreateAsync(key, async () => await Task.FromResult("value"));
-        await _cacheService.GetOrCreateAsync(key, async () => await Task.FromResult("value"));
-
-        // Act
-        var stats = _cacheService.GetStatistics();
-
-        // Assert
-        stats.TotalHits.Should().Be(3);
-        stats.TotalMisses.Should().Be(1);
-        stats.HitRate.Should().Be(75.0); // 3/4 = 75%
-    }
-
-    [Fact]
-    public void Remove_ShouldRemoveEntryFromCache()
-    {
-        // Arrange
-        var key = "test-key";
-        _memoryCache.Set(key, "value");
+            () =>
+            {
+                factoryCallCount++;
+                return Task.FromResult(initialValue);
+            });
 
         // Act
         _cacheService.Remove(key);
 
-        // Assert
-        _memoryCache.TryGetValue(key, out var _).Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task RemoveByPrefix_ShouldRemoveMatchingEntries()
-    {
-        // Arrange
-        await _cacheService.GetOrCreateAsync("prefix:key1", async () => await Task.FromResult("value1"));
-        await _cacheService.GetOrCreateAsync("prefix:key2", async () => await Task.FromResult("value2"));
-        await _cacheService.GetOrCreateAsync("other:key3", async () => await Task.FromResult("value3"));
-
-        // Act
-        _cacheService.RemoveByPrefix("prefix:");
+        var result = await _cacheService.GetOrCreateAsync(
+            key,
+            () =>
+            {
+                factoryCallCount++;
+                return Task.FromResult(newValue);
+            });
 
         // Assert
-        _memoryCache.TryGetValue("prefix:key1", out var _).Should().BeFalse();
-        _memoryCache.TryGetValue("prefix:key2", out var _).Should().BeFalse();
-        _memoryCache.TryGetValue("other:key3", out var _).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task RemoveByPrefix_WithNoMatches_ShouldNotThrow()
-    {
-        // Arrange
-        await _cacheService.GetOrCreateAsync("key1", async () => await Task.FromResult("value1"));
-
-        // Act
-        var act = () => _cacheService.RemoveByPrefix("nonexistent:");
-
-        // Assert
-        act.Should().NotThrow();
-    }
-
-    [Fact]
-    public async Task Clear_ShouldRemoveAllEntries()
-    {
-        // Arrange
-        await _cacheService.GetOrCreateAsync("key1", async () => await Task.FromResult("value1"));
-        await _cacheService.GetOrCreateAsync("key2", async () => await Task.FromResult("value2"));
-        await _cacheService.GetOrCreateAsync("key3", async () => await Task.FromResult("value3"));
-
-        // Act
-        _cacheService.Clear();
-
-        // Assert
-        _memoryCache.TryGetValue("key1", out var _).Should().BeFalse();
-        _memoryCache.TryGetValue("key2", out var _).Should().BeFalse();
-        _memoryCache.TryGetValue("key3", out var _).Should().BeFalse();
+        factoryCallCount.Should().Be(2);
+        result.Should().Be(newValue);
     }
 
     [Fact]
@@ -247,31 +145,48 @@ public class CacheServiceTests : IDisposable
     {
         // Arrange
         var key = "complex-key";
-        var complexObject = new TestComplexType
-        {
-            Id = 1,
-            Name = "Test",
-            Values = new List<string> { "a", "b", "c" }
-        };
+        var expectedValue = new TestDto { Id = 1, Name = "Test" };
+        var factoryCallCount = 0;
 
         // Act
-        var result = await _cacheService.GetOrCreateAsync(
+        var firstResult = await _cacheService.GetOrCreateAsync(
             key,
-            async () => await Task.FromResult(complexObject));
+            () =>
+            {
+                factoryCallCount++;
+                return Task.FromResult(expectedValue);
+            });
 
-        var cachedResult = await _cacheService.GetOrCreateAsync(
+        var secondResult = await _cacheService.GetOrCreateAsync(
             key,
-            async () => await Task.FromResult(new TestComplexType { Id = 999 }));
+            () =>
+            {
+                factoryCallCount++;
+                return Task.FromResult(new TestDto { Id = 2, Name = "Different" });
+            });
 
         // Assert
-        cachedResult.Should().BeSameAs(complexObject);
-        cachedResult.Id.Should().Be(1);
+        factoryCallCount.Should().Be(1);
+        firstResult.Should().BeEquivalentTo(expectedValue);
+        secondResult.Should().BeEquivalentTo(expectedValue);
     }
 
-    private class TestComplexType
+    [Fact]
+    public void Remove_NonExistentKey_ShouldNotThrow()
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public List<string> Values { get; set; } = new();
+        // Arrange
+        var key = "non-existent-key";
+
+        // Act
+        var act = () => _cacheService.Remove(key);
+
+        // Assert
+        act.Should().NotThrow();
+    }
+
+    private sealed class TestDto
+    {
+        public int Id { get; init; }
+        public string Name { get; init; } = string.Empty;
     }
 }

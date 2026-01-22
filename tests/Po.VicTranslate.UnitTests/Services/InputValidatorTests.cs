@@ -1,201 +1,61 @@
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
-using Moq;
-using Po.VicTranslate.Api.Services.Validation;
+using PoVicTranslate.Web.Services.Validation;
 using Xunit;
 
 namespace Po.VicTranslate.UnitTests.Services;
 
 public class InputValidatorTests
 {
-    private readonly Mock<ILogger<InputValidator>> _mockLogger;
     private readonly InputValidator _validator;
 
     public InputValidatorTests()
     {
-        _mockLogger = new Mock<ILogger<InputValidator>>();
-        _validator = new InputValidator(_mockLogger.Object);
+        _validator = new InputValidator();
     }
 
-    #region SearchQuery Tests
+    #region ValidateTextContent Tests
 
     [Fact]
-    public void ValidateSearchQuery_WithNullQuery_ReturnsEmptyString()
+    public void ValidateTextContent_WithNullText_ReturnsInvalid()
     {
         // Act
-        var result = _validator.ValidateSearchQuery(null);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be(string.Empty);
-    }
-
-    [Fact]
-    public void ValidateSearchQuery_WithEmptyQuery_ReturnsEmptyString()
-    {
-        // Act
-        var result = _validator.ValidateSearchQuery("");
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be(string.Empty);
-    }
-
-    [Fact]
-    public void ValidateSearchQuery_WithValidQuery_ReturnsSanitizedQuery()
-    {
-        // Arrange
-        var query = "Victorian poetry";
-
-        // Act
-        var result = _validator.ValidateSearchQuery(query);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be("Victorian poetry");
-    }
-
-    [Fact]
-    public void ValidateSearchQuery_RemovesDangerousCharacters()
-    {
-        // Arrange
-        var query = "search<script>alert('xss')</script>";
-
-        // Act
-        var result = _validator.ValidateSearchQuery(query);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().NotContain("<");
-        result.SanitizedValue.Should().NotContain(">");
-        result.SanitizedValue.Should().NotContain("'");
-        result.SanitizedValue.Should().Be("searchscriptalertxss/script");
-    }
-
-    [Fact]
-    public void ValidateSearchQuery_WithExcessiveLength_ReturnsError()
-    {
-        // Arrange
-        var query = new string('a', 201);
-
-        // Act
-        var result = _validator.ValidateSearchQuery(query);
+        var result = _validator.ValidateTextContent(null, 1000);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("200 characters"));
+        result.Errors.Should().Contain("Text cannot be empty");
     }
 
     [Fact]
-    public void ValidateSearchQuery_RemovesExcessiveWhitespace()
-    {
-        // Arrange
-        var query = "Victorian    poetry    search";
-
-        // Act
-        var result = _validator.ValidateSearchQuery(query);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be("Victorian poetry search");
-    }
-
-    #endregion
-
-    #region ResourceId Tests
-
-    [Fact]
-    public void ValidateResourceId_WithNullId_ReturnsError()
+    public void ValidateTextContent_WithEmptyText_ReturnsInvalid()
     {
         // Act
-        var result = _validator.ValidateResourceId(null);
+        var result = _validator.ValidateTextContent("", 1000);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("cannot be empty"));
+        result.Errors.Should().Contain("Text cannot be empty");
     }
 
     [Fact]
-    public void ValidateResourceId_WithValidId_ReturnsId()
+    public void ValidateTextContent_WithWhitespaceText_ReturnsInvalid()
     {
-        // Arrange
-        var id = "song-123";
-
         // Act
-        var result = _validator.ValidateResourceId(id);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be("song-123");
-    }
-
-    [Fact]
-    public void ValidateResourceId_WithInvalidCharacters_ReturnsError()
-    {
-        // Arrange
-        var id = "song/../../../etc/passwd";
-
-        // Act
-        var result = _validator.ValidateResourceId(id);
+        var result = _validator.ValidateTextContent("   ", 1000);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("Resource ID can only contain"));
+        result.Errors.Should().Contain("Text cannot be empty");
     }
 
     [Fact]
-    public void ValidateResourceId_WithExcessiveLength_ReturnsError()
+    public void ValidateTextContent_WithValidText_ReturnsValid()
     {
         // Arrange
-        var id = new string('a', 101);
+        var text = "Hello, this is valid text content.";
 
         // Act
-        var result = _validator.ValidateResourceId(id);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("100 characters"));
-    }
-
-    [Theory]
-    [InlineData("song123")]
-    [InlineData("song_123")]
-    [InlineData("song-123")]
-    [InlineData("SONG123")]
-    [InlineData("Song_123-ABC")]
-    public void ValidateResourceId_WithValidFormats_Succeeds(string id)
-    {
-        // Act
-        var result = _validator.ValidateResourceId(id);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be(id);
-    }
-
-    #endregion
-
-    #region TextContent Tests
-
-    [Fact]
-    public void ValidateTextContent_WithNullText_ReturnsError()
-    {
-        // Act
-        var result = _validator.ValidateTextContent(null);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("cannot be empty"));
-    }
-
-    [Fact]
-    public void ValidateTextContent_WithValidText_ReturnsText()
-    {
-        // Arrange
-        var text = "Hello, good day to you!";
-
-        // Act
-        var result = _validator.ValidateTextContent(text);
+        var result = _validator.ValidateTextContent(text, 1000);
 
         // Assert
         result.IsValid.Should().BeTrue();
@@ -203,199 +63,101 @@ public class InputValidatorTests
     }
 
     [Fact]
-    public void ValidateTextContent_ExceedingMaxLength_ReturnsError()
+    public void ValidateTextContent_ExceedingMaxLength_ReturnsInvalid()
     {
         // Arrange
-        var text = new string('a', 5001);
+        var text = new string('a', 100);
 
         // Act
-        var result = _validator.ValidateTextContent(text, maxLength: 5000);
+        var result = _validator.ValidateTextContent(text, 50);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("5000 characters"));
+        result.Errors.Should().Contain("Text exceeds maximum length of 50 characters");
     }
 
     [Fact]
-    public void ValidateTextContent_WithNullBytes_ReturnsError()
+    public void ValidateTextContent_AtExactMaxLength_ReturnsValid()
     {
         // Arrange
-        var text = "Hello\0World";
+        var text = new string('a', 50);
 
         // Act
-        var result = _validator.ValidateTextContent(text);
+        var result = _validator.ValidateTextContent(text, 50);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ValidateTextContent_WithScriptTag_ReturnsInvalid()
+    {
+        // Arrange
+        var text = "Hello <script>alert('xss')</script> World";
+
+        // Act
+        var result = _validator.ValidateTextContent(text, 1000);
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("invalid characters"));
+        result.Errors.Should().Contain("Text contains potentially malicious content");
+    }
+
+    [Fact]
+    public void ValidateTextContent_WithJavascriptUri_ReturnsInvalid()
+    {
+        // Arrange
+        var text = "Click here: javascript:void(0)";
+
+        // Act
+        var result = _validator.ValidateTextContent(text, 1000);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain("Text contains potentially malicious content");
     }
 
     [Fact]
     public void ValidateTextContent_RemovesControlCharacters()
     {
         // Arrange
-        var text = "Hello\u0001\u0002World\u0003!";
+        var text = "Hello\x00\x01\x02World";
 
         // Act
-        var result = _validator.ValidateTextContent(text);
+        var result = _validator.ValidateTextContent(text, 1000);
 
         // Assert
         result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be("HelloWorld!");
+        result.SanitizedValue.Should().Be("HelloWorld");
     }
 
     [Fact]
-    public void ValidateTextContent_PreservesCommonWhitespace()
+    public void ValidateTextContent_PreservesNewlinesAndTabs()
     {
         // Arrange
-        var text = "Hello\nWorld\tTest\r\nEnd";
+        var text = "Hello\n\tWorld";
 
         // Act
-        var result = _validator.ValidateTextContent(text);
+        var result = _validator.ValidateTextContent(text, 1000);
 
         // Assert
         result.IsValid.Should().BeTrue();
         result.SanitizedValue.Should().Contain("\n");
         result.SanitizedValue.Should().Contain("\t");
-        result.SanitizedValue.Should().Contain("\r");
-    }
-
-    #endregion
-
-    #region FilePath Tests
-
-    [Fact]
-    public void ValidateFilePath_WithNullPath_ReturnsError()
-    {
-        // Act
-        var result = _validator.ValidateFilePath(null);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("cannot be empty"));
     }
 
     [Fact]
-    public void ValidateFilePath_WithPathTraversal_ReturnsError()
+    public void ValidateTextContent_TrimsWhitespace()
     {
         // Arrange
-        var path = "../../../etc/passwd";
+        var text = "  Hello World  ";
 
         // Act
-        var result = _validator.ValidateFilePath(path);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("invalid patterns"));
-    }
-
-    [Fact]
-    public void ValidateFilePath_WithAbsolutePath_ReturnsError()
-    {
-        // Arrange
-        var path = "C:\\Windows\\System32\\file.txt";
-
-        // Act
-        var result = _validator.ValidateFilePath(path);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("relative"));
-    }
-
-    [Fact]
-    public void ValidateFilePath_WithValidRelativePath_Succeeds()
-    {
-        // Arrange
-        var path = "data/lyrics/song.txt";
-
-        // Act
-        var result = _validator.ValidateFilePath(path);
+        var result = _validator.ValidateTextContent(text, 1000);
 
         // Assert
         result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be(path);
-    }
-
-    [Fact]
-    public void ValidateFilePath_WithAllowedExtension_Succeeds()
-    {
-        // Arrange
-        var path = "data/lyrics/song.txt";
-        var allowedExtensions = new[] { ".txt", ".json" };
-
-        // Act
-        var result = _validator.ValidateFilePath(path, allowedExtensions);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.SanitizedValue.Should().Be(path);
-    }
-
-    [Fact]
-    public void ValidateFilePath_WithDisallowedExtension_ReturnsError()
-    {
-        // Arrange
-        var path = "data/lyrics/song.exe";
-        var allowedExtensions = new[] { ".txt", ".json" };
-
-        // Act
-        var result = _validator.ValidateFilePath(path, allowedExtensions);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("not allowed"));
-    }
-
-    #endregion
-
-    #region NumericParameter Tests
-
-    [Fact]
-    public void ValidateNumericParameter_BelowMinimum_ReturnsError()
-    {
-        // Act
-        var result = _validator.ValidateNumericParameter(0, min: 1, max: 100, parameterName: "pageSize");
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("at least 1"));
-    }
-
-    [Fact]
-    public void ValidateNumericParameter_AboveMaximum_ReturnsError()
-    {
-        // Act
-        var result = _validator.ValidateNumericParameter(101, min: 1, max: 100, parameterName: "pageSize");
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.Contains("cannot exceed 100"));
-    }
-
-    [Fact]
-    public void ValidateNumericParameter_WithinRange_Succeeds()
-    {
-        // Act
-        var result = _validator.ValidateNumericParameter(50, min: 1, max: 100, parameterName: "pageSize");
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.Value.Should().Be(50);
-    }
-
-    [Fact]
-    public void ValidateNumericParameter_AtBoundaries_Succeeds()
-    {
-        // Act
-        var resultMin = _validator.ValidateNumericParameter(1, min: 1, max: 100, parameterName: "pageSize");
-        var resultMax = _validator.ValidateNumericParameter(100, min: 1, max: 100, parameterName: "pageSize");
-
-        // Assert
-        resultMin.IsValid.Should().BeTrue();
-        resultMin.Value.Should().Be(1);
-        resultMax.IsValid.Should().BeTrue();
-        resultMax.Value.Should().Be(100);
+        result.SanitizedValue.Should().Be("Hello World");
     }
 
     #endregion

@@ -16,6 +16,7 @@ export default defineConfig({
     baseURL: 'http://localhost:5002', // Use different port to avoid conflicts
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    headless: true, // Run headless by default
   },
 
   projects: [
@@ -33,10 +34,10 @@ export default defineConfig({
     },
   ],
 
-  // Web server configuration - starts the app before tests
+  // Web server configuration - starts the unified Blazor Web app before tests
   webServer: {
-    command: 'dotnet run --project ../../src/Po.VicTranslate.Api/Po.VicTranslate.Api.csproj --launch-profile e2e',
-    url: 'http://localhost:5002/api/health/live', // Use different port
+    command: 'dotnet run --project ../../src/PoVicTranslate.Web/PoVicTranslate.Web.csproj --urls http://localhost:5002',
+    url: 'http://localhost:5002/health/live', // Aspire health endpoint
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes to start
   },

@@ -1,0 +1,50 @@
+@PoVicTranslate.Web_HostAddress = http://localhost:5000
+
+### Health Check - Full
+GET {{PoVicTranslate.Web_HostAddress}}/health
+Accept: application/json
+
+### Health Check - Liveness
+GET {{PoVicTranslate.Web_HostAddress}}/alive
+Accept: application/json
+
+### Health Check - Readiness  
+GET {{PoVicTranslate.Web_HostAddress}}/ready
+Accept: application/json
+
+### Translation - Translate Text
+POST {{PoVicTranslate.Web_HostAddress}}/api/translation/translate
+Content-Type: application/json
+
+{
+  "text": "Hello, how are you today?"
+}
+
+### Translation - Get Diagnostic Info
+GET {{PoVicTranslate.Web_HostAddress}}/api/translation/diagnostics
+Accept: application/json
+
+### Lyrics - Get All Titles
+GET {{PoVicTranslate.Web_HostAddress}}/api/lyrics/titles
+Accept: application/json
+
+### Lyrics - Get Random Lyrics
+GET {{PoVicTranslate.Web_HostAddress}}/api/lyrics/random
+Accept: application/json
+
+### Lyrics - Get Specific Song
+GET {{PoVicTranslate.Web_HostAddress}}/api/lyrics/C.R.E.A.M.
+Accept: application/json
+
+### Speech - Synthesize (POST)
+POST {{PoVicTranslate.Web_HostAddress}}/api/speech/synthesize
+Content-Type: application/json
+
+{
+  "text": "Hello, this is a test of speech synthesis.",
+  "language": "en-US"
+}
+
+### Speech - Get Diagnostic Info
+GET {{PoVicTranslate.Web_HostAddress}}/api/speech/diagnostics
+Accept: application/json

@@ -1,0 +1,87 @@
+.header-container {
+    width: 100%;
+    padding: 0.5rem 1rem;
+}
+
+.brand-link {
+    text-decoration: none;
+}
+
+.brand-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--rz-text-color);
+}
+
+.nav-btn {
+    font-weight: 500;
+}
+
+.nav-btn.active {
+    background-color: var(--rz-primary-lighter);
+}
+
+.nav-desktop {
+    display: flex;
+}
+
+.mobile-menu-btn {
+    display: none;
+}
+
+.mobile-sidebar {
+    display: none;
+}
+
+.mobile-nav-stack {
+    padding: 1rem;
+}
+
+.mobile-nav-btn {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.mobile-nav-btn.active {
+    background-color: var(--rz-primary-lighter);
+}
+
+.main-content-wrapper {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .nav-desktop {
+        display: none;
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .mobile-sidebar {
+        display: block;
+    }
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
