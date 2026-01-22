@@ -2,6 +2,7 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PoVicTranslate.Web.Components;
 using PoVicTranslate.Web.Configuration;
 using PoVicTranslate.Web.Endpoints;
@@ -76,10 +77,12 @@ builder.Services.AddApplicationInsightsTelemetry(options =>
 });
 
 // Add health checks with external dependency checks
+// InternetConnectivity check is non-critical (Degraded on failure, not Unhealthy)
 builder.Services.AddHealthChecks()
     .AddCheck<AzureOpenAIHealthCheck>("AzureOpenAI", tags: ["ready", "external"])
     .AddCheck<AzureSpeechHealthCheck>("AzureSpeech", tags: ["ready", "external"])
-    .AddCheck<InternetConnectivityHealthCheck>("InternetConnectivity", tags: ["external"]);
+    .AddCheck<InternetConnectivityHealthCheck>("InternetConnectivity", 
+        failureStatus: HealthStatus.Degraded, tags: ["external"]);
 
 // Add Blazor components
 builder.Services.AddRazorComponents()
