@@ -30,5 +30,4 @@ public sealed record TranslationRequest(string Text);
 public sealed record TranslationResult(
     string OriginalText,
     string TranslatedText,
-    string SourceLanguage,
-    string TargetLanguage);
+    byte[]? AudioData);
