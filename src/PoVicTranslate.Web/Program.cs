@@ -138,6 +138,7 @@ builder.Services.AddSingleton<ICustomTelemetryService, CustomTelemetryService>()
 // Register client-side services for InteractiveAuto SSR prerendering
 builder.Services.AddScoped<PoVicTranslate.Web.Client.Services.ClientTranslationService>();
 builder.Services.AddScoped<PoVicTranslate.Web.Client.Services.ClientLyricsService>();
+builder.Services.AddScoped<PoVicTranslate.Web.Client.Services.ClientSpeechService>();
 builder.Services.AddScoped<PoVicTranslate.Web.Client.Services.HistoryService>();
 builder.Services.AddScoped<PoVicTranslate.Web.Client.Services.ITranslationOrchestrator, 
     PoVicTranslate.Web.Client.Services.TranslationOrchestrator>();
