@@ -36,7 +36,8 @@
                         Placeholder="Enter text to translate..."
                         Rows="6"
                         MaxLength="2000"
-                        Disabled="@_viewModel.IsTranslating" />
+                        Disabled="@_viewModel.IsTranslating"
+                        Change="@(args => StateHasChanged())" />
 
         <RadzenButton Text="@(_viewModel.IsTranslating ? "Translating..." : "Translate")"
                       ButtonStyle="ButtonStyle.Primary"
