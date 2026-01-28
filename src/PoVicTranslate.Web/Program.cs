@@ -116,20 +116,20 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
 
 // Register core services
-builder.Services.AddScoped<ITranslationService, TranslationService>();
-builder.Services.AddScoped<ILyricsService, LyricsService>();
+builder.Services.AddSingleton<ITranslationService, TranslationService>();
+builder.Services.AddSingleton<ILyricsService, LyricsService>();
 
 // Register validation services
 builder.Services.AddSingleton<ISpeechConfigValidator, SpeechConfigValidator>();
-builder.Services.AddScoped<IAudioSynthesisService, AudioSynthesisService>();
+builder.Services.AddSingleton<IAudioSynthesisService, AudioSynthesisService>();
 builder.Services.AddSingleton<IInputValidator, InputValidator>();
 
 // Register diagnostic validators
-builder.Services.AddScoped<IDiagnosticValidator, AzureOpenAIDiagnosticValidator>();
-builder.Services.AddScoped<IDiagnosticValidator, AzureSpeechDiagnosticValidator>();
-builder.Services.AddScoped<IDiagnosticValidator, InternetConnectivityDiagnosticValidator>();
-builder.Services.AddScoped<IConfigurationValidator, ConfigurationValidator>();
-builder.Services.AddScoped<IDiagnosticService, DiagnosticService>();
+builder.Services.AddSingleton<IDiagnosticValidator, AzureOpenAIDiagnosticValidator>();
+builder.Services.AddSingleton<IDiagnosticValidator, AzureSpeechDiagnosticValidator>();
+builder.Services.AddSingleton<IDiagnosticValidator, InternetConnectivityDiagnosticValidator>();
+builder.Services.AddSingleton<IConfigurationValidator, ConfigurationValidator>();
+builder.Services.AddSingleton<IDiagnosticService, DiagnosticService>();
 
 // Register utility services
 builder.Services.AddSingleton<ILyricsUtilityService, LyricsUtilityService>();
