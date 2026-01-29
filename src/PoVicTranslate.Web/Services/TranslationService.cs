@@ -30,7 +30,8 @@ public sealed class TranslationService : ITranslationService
     public TranslationService(
         IOptions<ApiSettings> apiSettings,
         TelemetryClient telemetryClient,
-        ILogger<TranslationService> logger)
+        ILogger<TranslationService> logger,
+        ChatClient? chatClient = null)
     {
         ArgumentNullException.ThrowIfNull(apiSettings);
         _telemetryClient = telemetryClient;
@@ -38,6 +39,12 @@ public sealed class TranslationService : ITranslationService
 
         var settings = apiSettings.Value;
         _deploymentName = settings.AzureOpenAIDeploymentName;
+
+        if (chatClient != null)
+        {
+            _chatClient = chatClient;
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(settings.AzureOpenAIApiKey) ||
             string.IsNullOrWhiteSpace(settings.AzureOpenAIEndpoint) ||
