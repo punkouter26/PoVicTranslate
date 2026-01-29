@@ -4,8 +4,13 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using Azure.AI.OpenAI;
+using OpenAI;
+using OpenAI.Chat;
 using PoVicTranslate.Web.Configuration;
 using PoVicTranslate.Web.Services;
+using System.ClientModel;
+using System.ClientModel.Primitives;
 using Xunit;
 
 namespace Po.VicTranslate.UnitTests.Services;
@@ -104,5 +109,88 @@ public class TranslationServiceTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task TranslateToVictorianEnglishAsync_WithValidText_ShouldReturnTranslation()
+    {
+        // Arrange
+        var mockChatClient = new Mock<ChatClient>("gpt-4o", new ApiKeyCredential("key"), new OpenAIClientOptions());
+        var expectedTranslation = "Good morrow.";
+
+        var content = new ChatMessageContent(expectedTranslation);
+        var chatCompletion = OpenAIChatModelFactory.ChatCompletion(content: content);
+
+        var mockResponse = new Mock<PipelineResponse>();
+        mockResponse.Setup(r => r.Status).Returns(200);
+
+        var clientResult = ClientResult.FromValue(chatCompletion, mockResponse.Object);
+
+        mockChatClient.Setup(x => x.CompleteChatAsync(
+            It.IsAny<ChatMessage[]>()))
+            .ReturnsAsync(clientResult);
+
+        var service = new TranslationService(
+            _mockOptions.Object,
+            _telemetryClient,
+            _mockLogger.Object,
+            mockChatClient.Object);
+
+        // Act
+        var result = await service.TranslateToVictorianEnglishAsync("Hello");
+
+        // Assert
+        result.Should().Be(expectedTranslation);
+    }
+
+    [Fact]
+    public async Task TranslateToVictorianEnglishAsync_WhenRateLimited_ShouldReturnPoliteError()
+    {
+        // Arrange
+        var mockChatClient = new Mock<ChatClient>("gpt-4o", new ApiKeyCredential("key"), new OpenAIClientOptions());
+
+        var mockResponse = new Mock<PipelineResponse>();
+        mockResponse.Setup(r => r.Status).Returns(429);
+
+        var exception = new ClientResultException(mockResponse.Object);
+
+        mockChatClient.Setup(x => x.CompleteChatAsync(
+            It.IsAny<ChatMessage[]>()))
+            .ThrowsAsync(exception);
+
+        var service = new TranslationService(
+            _mockOptions.Object,
+            _telemetryClient,
+            _mockLogger.Object,
+            mockChatClient.Object);
+
+        // Act
+        var result = await service.TranslateToVictorianEnglishAsync("Hello");
+
+        // Assert
+        result.Should().Contain("Alas, our translation apparatus finds itself most overwhelmed");
+    }
+
+    [Fact]
+    public async Task TranslateToVictorianEnglishAsync_WhenErrorOccurs_ShouldReturnErrorMessage()
+    {
+        // Arrange
+        var mockChatClient = new Mock<ChatClient>("gpt-4o", new ApiKeyCredential("key"), new OpenAIClientOptions());
+
+        mockChatClient.Setup(x => x.CompleteChatAsync(
+            It.IsAny<ChatMessage[]>()))
+            .ThrowsAsync(new InvalidOperationException("Generic error"));
+
+        var service = new TranslationService(
+            _mockOptions.Object,
+            _telemetryClient,
+            _mockLogger.Object,
+            mockChatClient.Object);
+
+        // Act
+        var result = await service.TranslateToVictorianEnglishAsync("Hello");
+
+        // Assert
+        result.Should().Contain("Regrettably, an unforeseen circumstance");
     }
 }
