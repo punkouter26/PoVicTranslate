@@ -2,6 +2,7 @@ using Azure;
 using Azure.AI.OpenAI;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using OpenAI.Chat;
 using PoVicTranslate.Web.Configuration;
@@ -27,10 +28,20 @@ public sealed class TranslationService : ITranslationService
         Do not add any explanations, only provide the translated text.
         """;
 
+    [ActivatorUtilitiesConstructor]
     public TranslationService(
         IOptions<ApiSettings> apiSettings,
         TelemetryClient telemetryClient,
         ILogger<TranslationService> logger)
+        : this(apiSettings, telemetryClient, logger, null)
+    {
+    }
+
+    public TranslationService(
+        IOptions<ApiSettings> apiSettings,
+        TelemetryClient telemetryClient,
+        ILogger<TranslationService> logger,
+        ChatClient? chatClient)
     {
         ArgumentNullException.ThrowIfNull(apiSettings);
         _telemetryClient = telemetryClient;
@@ -38,6 +49,13 @@ public sealed class TranslationService : ITranslationService
 
         var settings = apiSettings.Value;
         _deploymentName = settings.AzureOpenAIDeploymentName;
+
+        if (chatClient is not null)
+        {
+            _chatClient = chatClient;
+            _logger.LogInformation("TranslationService initialized with injected ChatClient");
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(settings.AzureOpenAIApiKey) ||
             string.IsNullOrWhiteSpace(settings.AzureOpenAIEndpoint) ||
