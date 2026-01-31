@@ -20,7 +20,7 @@ public class LyricsEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     public async Task GetAvailableSongs_ShouldReturnList()
     {
         // Act
-        var response = await _client.GetAsync("/api/lyrics", TestContext.Current.CancellationToken);
+        var response = await _client.GetAsync("/api/lyrics/titles", TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);

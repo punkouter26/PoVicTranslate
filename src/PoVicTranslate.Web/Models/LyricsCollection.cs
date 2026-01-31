@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace PoVicTranslate.Web.Models;
 
 /// <summary>
@@ -14,5 +16,7 @@ public sealed class LyricsCollection
 public sealed class SongEntry
 {
     public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("content")]
     public string Lyrics { get; set; } = string.Empty;
 }

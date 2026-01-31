@@ -13,6 +13,7 @@ public sealed class LyricsService : ILyricsService
     private const int MaxWords = 200;
     private LyricsCollection? _lyricsCache;
     private readonly SemaphoreSlim _loadSemaphore = new(1, 1);
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     public LyricsService(IWebHostEnvironment webHostEnvironment, ILogger<LyricsService> logger)
     {
@@ -43,7 +44,7 @@ public sealed class LyricsService : ILyricsService
             }
 
             var jsonContent = await File.ReadAllTextAsync(_lyricsFilePath);
-            _lyricsCache = JsonSerializer.Deserialize<LyricsCollection>(jsonContent);
+            _lyricsCache = JsonSerializer.Deserialize<LyricsCollection>(jsonContent, _jsonOptions);
 
             if (_lyricsCache is null)
             {
@@ -70,17 +71,15 @@ public sealed class LyricsService : ILyricsService
     }
 
     /// <inheritdoc />
-    public async Task<string?> GetLyricsAsync(string songFileName)
+    public async Task<string?> GetLyricsAsync(string songTitle)
     {
-        var songId = Path.GetFileNameWithoutExtension(songFileName);
-
         var collection = await GetLyricsCollectionAsync();
         var song = collection.Songs.FirstOrDefault(s =>
-            s.Title.Equals(songId, StringComparison.OrdinalIgnoreCase));
+            s.Title.Equals(songTitle, StringComparison.OrdinalIgnoreCase));
 
         if (song is null)
         {
-            _logger.LogWarning("Song not found: {SongId}", songId);
+            _logger.LogWarning("Song not found: {SongTitle}", songTitle);
             return null;
         }
 
