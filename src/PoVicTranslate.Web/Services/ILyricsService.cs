@@ -13,7 +13,7 @@ public interface ILyricsService
     /// <summary>
     /// Gets lyrics for a specific song, limited to 200 words.
     /// </summary>
-    Task<string?> GetLyricsAsync(string songFileName);
+    Task<string?> GetLyricsAsync(string songTitle);
 
     /// <summary>
     /// Gets random lyrics from the collection.
